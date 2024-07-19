@@ -23,7 +23,8 @@ class Handler:
         self._l = 0
         self.data = np.zeros(0)
         self.results = list()
-        self.q = Queue()
+        self.pred_que = Queue()
+        self.data_que = Queue()
 
     def save_audio(self,y,label):
         dst_pth = os.path.join(self.dest_folder,label)
@@ -37,8 +38,8 @@ class Handler:
 
     def _proceed_prediction(self):
         try:
-            if not self.q.empty():
-                bytes_io = self.q.get()
+            if not self.pred_que.empty():
+                bytes_io = self.pred_que.get()
                 y, (result,score) = predictor.predict(bytes_io,self.sr)
                 if result is not None:
                     audio_path = self.save_audio(y,result)
@@ -51,12 +52,14 @@ class Handler:
 
     def predict(self):
         try:
-            b = BytesIO()
-            sf.write(b,self.data,self.sr,format='WAV')
-            b.seek(0)  
-            self.q.put(b)
-            # self._proceed_prediction()
-            Thread(target=self._proceed_prediction).start()
+            if not self.data_que.empty():
+                data = self.data_que.get()
+                b = BytesIO()
+                sf.write(b,data,self.sr,format='WAV')
+                b.seek(0)  
+                self.pred_que.put(b)
+                self._proceed_prediction()
+                # Thread(target=self._proceed_prediction).start()
         except Exception as e: 
             print(e)
 
@@ -66,6 +69,7 @@ class Handler:
                 self.data[:self._l] = self.data[self._l:]
                 self.data[self._l:] = self.audio_data[:self._l]
                 self.audio_data = self.audio_data[self._l:]
+                self.data_que.put(self.data.copy())
                 self.predict()
             time.sleep(0.1)
     

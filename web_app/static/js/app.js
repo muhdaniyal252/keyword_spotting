@@ -1,6 +1,6 @@
 let audioChunks = [];
 let to_send = false;
-const recordMs = 3000;
+const recordMs = 5000;
 var recorder;
 
 var audioContext = new AudioContext();
