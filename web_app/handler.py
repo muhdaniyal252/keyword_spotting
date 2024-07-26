@@ -1,5 +1,4 @@
 from predictor import Predictor
-from threading import Thread
 import time
 import numpy as np
 import datetime 

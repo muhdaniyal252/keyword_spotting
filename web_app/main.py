@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify ,request, session
+from flask import Flask, render_template, jsonify, request
 import numpy as np
 import shutil
 from handler import Handler
@@ -11,13 +11,7 @@ from threading import Thread
 app = Flask(__name__)
 
 handler = Handler(root_path=app.root_path)
-session['handler'].start_process()
-
-@app.before_request
-def make_handler():
-    if 'handler' not in session:
-        session['handler'] = Handler(root_path=app.root_path)
-        session['handler'].start_process()
+handler.start_process()
 
 @app.route('/')
 def index():
@@ -25,9 +19,9 @@ def index():
 
 @app.route('/set_sr', methods=['POST'])
 def set_sr():
-    session['handler'].sr = int(request.form['sr'])
-    session['handler']._l = session['handler'].sr//2
-    session['handler'].data = np.zeros(session['handler'].sr)
+    handler.sr = int(request.form['sr'])
+    handler._l = handler.sr//2
+    handler.data = np.zeros(handler.sr)
     return jsonify('SR saved successfully')
 
 @app.route('/upload', methods=['POST'])
@@ -36,17 +30,17 @@ def upload():
     audio_bytes = BytesIO(audio.read())
     audio_bytes.seek(0)  
     new_data, _ = sf.read(audio_bytes)
-    session['handler'].audio_data = np.append(session['handler'].audio_data,new_data)
+    handler.audio_data = np.append(handler.audio_data,new_data)
     return jsonify({'status':'success'})
 
 @app.route('/clear', methods=['POST'])
 def clear():
-    session['handler'].reset()
+    handler.reset()
     return jsonify({'status':'success'})
 
 @app.route('/get_result')
 def get_result():
-    r = session['handler'].results.pop(0) if session['handler'].results else None
+    r = handler.results.pop(0) if handler.results else None
     return jsonify({'result':r})
 
 def remove_audios():
