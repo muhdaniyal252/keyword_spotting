@@ -5,7 +5,7 @@ from transformers import pipeline
 class Predictor:
 
     def __init__(self):
-        model_pth = '/workspace/wav2vec2-finetune'
+        model_pth = 'D:/model_code/server_models/wav2vec2/trial_2/wav2vec2-finetune'
         self.pipe = pipeline("audio-classification", model=model_pth)
         self.target_sr = 16000
 

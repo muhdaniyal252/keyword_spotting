@@ -57,12 +57,13 @@ class Handler:
                 sf.write(b,data,self.sr,format='WAV')
                 b.seek(0)  
                 self.pred_que.put(b)
-                self._proceed_prediction()
-                # Thread(target=self._proceed_prediction).start()
+                # self._proceed_prediction()
+                Thread(target=self._proceed_prediction).start()
         except Exception as e: 
             print(e)
 
     def process(self):
+        counter = 0
         while True:
             if self.audio_data.size > self.sr: 
                 self.data[:self._l] = self.data[self._l:]
@@ -70,7 +71,10 @@ class Handler:
                 self.audio_data = self.audio_data[self._l:]
                 self.data_que.put(self.data.copy())
                 self.predict()
-            time.sleep(0.1)
+            if counter == 10000:
+                time.sleep(5)
+                counter = 0
+            counter += 1
     
     def start_process(self):
         Thread(target=self.process).start()

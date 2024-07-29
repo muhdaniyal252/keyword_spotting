@@ -54,5 +54,5 @@ def remove_audios():
 
 
 if __name__ == '__main__':
-    Thread(target=remove_audios).start()
-    app.run(debug=False,host='0.0.0.0',port=5000)
+    # Thread(target=remove_audios).start()
+    app.run(debug=False,host='0.0.0.0',port=5000,ssl_context='adhoc')
