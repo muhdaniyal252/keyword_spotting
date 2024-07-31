@@ -57,8 +57,8 @@ class Handler:
                 sf.write(b,data,self.sr,format='WAV')
                 b.seek(0)  
                 self.pred_que.put(b)
-                # self._proceed_prediction()
-                Thread(target=self._proceed_prediction).start()
+                self._proceed_prediction()
+                # Thread(target=self._proceed_prediction).start()
         except Exception as e: 
             print(e)
 
