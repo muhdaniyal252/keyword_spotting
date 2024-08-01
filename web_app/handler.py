@@ -37,8 +37,8 @@ class Handler:
 
     def _proceed_prediction(self):
         try:
-            if not self.pred_que.empty():
-                bytes_io = self.pred_que.get()
+            if not self.data_que.empty():
+                bytes_io = self.data_que.get()
                 y, (result,score) = predictor.predict(bytes_io,self.sr)
                 if result is not None:
                     audio_path = self.save_audio(y,result)
@@ -70,7 +70,7 @@ class Handler:
                 self.data[self._l:] = self.audio_data[:self._l]
                 self.audio_data = self.audio_data[self._l:]
                 self.data_que.put(self.data.copy())
-                self.predict()
+                self._proceed_prediction()
             if counter == 10000:
                 time.sleep(5)
                 counter = 0
