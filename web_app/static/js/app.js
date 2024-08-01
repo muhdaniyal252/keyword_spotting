@@ -67,6 +67,15 @@ function postRecordings(){
     }, 1000);
 }
 
+function move(path,label){
+    var xhr = new XMLHttpRequest();
+    xhr.open("POST", "/move", true);
+    var fd = new FormData();
+    fd.append('path', path);
+    fd.append('label', label);
+    xhr.send(fd);
+}
+
 function getResults(){
     function getResult(){
         fetch('/get_result')
@@ -86,10 +95,6 @@ function getResults(){
                 newItem.appendChild(newCell);
 
                 var newCell = document.createElement('td');
-                newCell.innerHTML = obj['result']['score'];
-                newItem.appendChild(newCell);
-
-                var newCell = document.createElement('td');
                 var audio = document.createElement('audio');
                 var source = document.createElement('source');
                 source.src = obj['result']['path'];
@@ -98,6 +103,56 @@ function getResults(){
                 audio.innerHTML = 'Your browser does support audio!'
                 audio.appendChild(source);
                 newCell.appendChild(audio);
+                newItem.appendChild(newCell);
+
+                var newCell = document.createElement('td');
+                var correctButton = document.createElement('a');
+                correctButton.classList.add('btn');
+                correctButton.classList.add('btn-outline-success');
+                correctButton.onclick = function(){
+                    move(obj['result']['path'],obj['result']['prediction']);
+                };
+                var correctIcon = document.createElement('i');
+                correctIcon.classList.add('fa-regular');
+                correctIcon.classList.add('fa-thumbs-up');
+                correctButton.appendChild(correctIcon);
+                newCell.appendChild(correctButton);
+                newItem.appendChild(newCell);
+                
+                var newCell = document.createElement('td');
+                var adeleButton = document.createElement('button');
+                adeleButton.classList.add('btn');
+                adeleButton.classList.add('btn-sm');
+                adeleButton.classList.add('btn-outline-secondary');
+                adeleButton.innerHTML = 'Adele'
+                adeleButton.onclick = function(){
+                    move(obj['result']['path'],'adele');
+                };
+                newCell.appendChild(adeleButton);
+                newItem.appendChild(newCell);
+
+                var newCell = document.createElement('td');
+                var hilfeButton = document.createElement('button');
+                hilfeButton.classList.add('btn');
+                hilfeButton.classList.add('btn-sm');
+                hilfeButton.classList.add('btn-outline-secondary');
+                hilfeButton.innerHTML = 'Hilfe'
+                hilfeButton.onclick = function(){
+                    move(obj['result']['path'],'hilfe');
+                };
+                newCell.appendChild(hilfeButton);
+                newItem.appendChild(newCell);
+
+                var newCell = document.createElement('td');
+                var unknownButton = document.createElement('button');
+                unknownButton.classList.add('btn');
+                unknownButton.classList.add('btn-sm');
+                unknownButton.classList.add('btn-outline-secondary');
+                unknownButton.innerHTML = 'Unknown'
+                unknownButton.onclick = function(){
+                    move(obj['result']['path'],'unknown');
+                };
+                newCell.appendChild(unknownButton);
                 newItem.appendChild(newCell);
 
                 var newCell = document.createElement('td');

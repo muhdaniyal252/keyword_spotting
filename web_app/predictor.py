@@ -62,3 +62,12 @@ class Predictor:
         features = self.get_features(y,sr=self.target_sr)
         pred = self.model.predict(features)
         return y,(self.label.get(np.argmax(pred),'unknown'),round(np.max(pred)*100,2))
+
+class _Predictor:
+    
+    def __init__(self):
+        self.target_sr = 16000
+    
+    def predict(self,data,sr):
+        y = np.random.random(16000)
+        return y,('unknown',89.3)

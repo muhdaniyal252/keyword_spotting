@@ -24,6 +24,13 @@ class Handler:
         self.results = list()
         self.pred_que = Queue()
         self.data_que = Queue()
+        data_dir = f'{root_path}/data/'
+        self.data_dirs = {
+            'unknown' : f'{data_dir}/unknown',
+            'adele' : f'{data_dir}/adele',
+            'hilfe' : f'{data_dir}/hilfe',
+        }
+        for i in self.data_dirs.values(): os.makedirs(i,exist_ok=True)
 
     def save_audio(self,y,label):
         dst_pth = os.path.join(self.dest_folder,label)
@@ -83,3 +90,8 @@ class Handler:
         self.audio_data = np.array([])
         self.data = np.zeros(self.sr)
         shutil.rmtree(self.dest_folder)
+
+    def move(self,path,label):
+        try:
+            shutil.move(path,self.data_dirs[label])
+        except: pass

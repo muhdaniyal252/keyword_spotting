@@ -43,6 +43,13 @@ def get_result():
     r = handler.results.pop(0) if handler.results else None
     return jsonify({'result':r})
 
+@app.route('/move', methods=['POST'])
+def move():
+    path = f'{app.root_path}/{request.form["path"]}'
+    label = request.form['label']
+    handler.move(path, label)
+    return jsonify({'status':'success'})
+
 def remove_audios():
     while True:
         try:
@@ -55,4 +62,5 @@ def remove_audios():
 
 if __name__ == '__main__':
     # Thread(target=remove_audios).start()
+    # app.run(debug=False,host='0.0.0.0',port=5000)
     app.run(debug=False,host='0.0.0.0',port=5000,ssl_context='adhoc')
