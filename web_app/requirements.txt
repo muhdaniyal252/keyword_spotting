@@ -40,6 +40,7 @@ soundfile==0.12.1
 soxr==0.3.7
 sympy==1.13.0
 tbb==2021.13.0
+tensorflow==2.16.1
 threadpoolctl==3.5.0
 tokenizers==0.19.1
 torch==2.3.1
