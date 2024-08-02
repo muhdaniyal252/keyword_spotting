@@ -57,7 +57,7 @@ class _Predictor:
         return features
     
     def predict(self,data,sr):
-        # data,_ = librosa.load(data,sr=sr)
+        data,_ = librosa.load(data,sr=sr)
         y = librosa.resample(data,orig_sr=sr,target_sr=self.target_sr)
         features = self.get_features(y,sr=self.target_sr)
         pred = self.model.predict(features)

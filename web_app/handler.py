@@ -74,9 +74,13 @@ class Handler:
         counter = 0
         while True:
             if self.audio_data.size > self.sr: 
-                self.data[:self._l] = self.data[self._l:]
-                self.data[self._l:] = self.audio_data[:self._l]
-                self.audio_data = self.audio_data[self._l:]
+                self.data = self.audio_data[:self.sr]
+                self.audio_data = self.audio_data[self.sr:]
+
+                # self.data[:self._l] = self.data[self._l:]
+                # self.data[self._l:] = self.audio_data[:self._l]
+                # self.audio_data = self.audio_data[self._l:]
+
                 self.data_que.put(self.data.copy())
                 self.predict()
             if counter == 10000:
