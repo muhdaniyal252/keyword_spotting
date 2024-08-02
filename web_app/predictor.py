@@ -1,13 +1,13 @@
 
 import librosa
-# from transformers import pipeline
-import tensorflow as tf
+from transformers import pipeline
+#import tensorflow as tf
 import numpy as np
 
-class _Predictor:
+class Predictor:
 
     def __init__(self):
-        model_pth = r"D:\model_code\server_models\wav2vec2\trail_1\wav2vec2-finetune"
+        model_pth = '/shareddrive/work/model_code/models/wav2vec2/trail_1/wav2vec2-finetune'
         self.pipe = pipeline("audio-classification", model=model_pth)
         self.target_sr = 16000
 
@@ -19,7 +19,7 @@ class _Predictor:
             if i['score'] > mx_n:
                 mx_n = i['score']
                 lbl = i['label']
-        # return lbl,round(mx_n*100,2)
+        return lbl,round(mx_n*100,2)
         if lbl != 'unknown' and mx_n > 0.83:
             return lbl,round(mx_n*100,2)
         return 'unknown', round(mx_n*100,2)
@@ -34,7 +34,7 @@ class _Predictor:
         print(_result)
         return y, self.get_label(_result)
 
-class Predictor:
+class _Predictor:
     
     def __init__(self):
         self.model = tf.keras.models.load_model('/shareddrive/working/model_code/models/mobile_net/trail_1/_1/new_samples/16k_1s_melspec-nfft-1024_a_h_cnn_dense_model.keras')
@@ -61,7 +61,7 @@ class Predictor:
         y = librosa.resample(data,orig_sr=sr,target_sr=self.target_sr)
         features = self.get_features(y,sr=self.target_sr)
         pred = self.model.predict(features)
-        return y,(self.label.get(np.argmax(pred),'unknown'),round(np.max(pred)*100,2))
+        return y,(self.label.get(np.argmax(pred) if np.max(pred) >= 0.97 else 0,'unknown'),round(np.max(pred)*100,2))
 
 class _Predictor:
     
