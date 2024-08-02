@@ -37,7 +37,7 @@ class _Predictor:
 class Predictor:
     
     def __init__(self):
-        self.model = tf.keras.models.load_model(r"D:\model_code\server_models\mobile_net\trail_1\1\new_samples\16k_1s_melspec-nfft-1024_a_h_cnn_dense_model.keras")
+        self.model = tf.keras.models.load_model('/shareddrive/working/model_code/models/mobile_net/trail_1/_1/new_samples/16k_1s_melspec-nfft-1024_a_h_cnn_dense_model.keras')
         self.target_sr = 16000
         self.max_seconds = 1
         self.label = {
