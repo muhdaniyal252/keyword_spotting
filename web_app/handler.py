@@ -8,6 +8,7 @@ from io import BytesIO
 from threading import Thread
 import shutil
 from queue import Queue
+import secrets
 
 predictor = Predictor()
 
@@ -35,7 +36,7 @@ class Handler:
     def save_audio(self,y,label):
         dst_pth = os.path.join(self.dest_folder,label)
         os.makedirs(dst_pth,exist_ok=True)
-        file_name = f'{len(os.listdir(dst_pth))}_{label}.wav'
+        file_name = f'{secrets.token_hex(5)}_{label}.wav'
         file_path = os.path.join(dst_pth,file_name)
         sf.write(file_path,y,predictor.target_sr)
         tmp_path = file_path.replace('\\','/').split('static')[-1]
