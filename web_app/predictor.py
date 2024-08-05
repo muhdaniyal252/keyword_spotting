@@ -1,10 +1,10 @@
 
 import librosa
-from transformers import pipeline
-#import tensorflow as tf
+# from transformers import pipeline
+import tensorflow as tf
 import numpy as np
 
-class Predictor:
+class _Predictor:
 
     def __init__(self):
         model_pth = '/shareddrive/work/model_code/models/wav2vec2/trail_1/wav2vec2-finetune'
@@ -34,7 +34,7 @@ class Predictor:
         print(_result)
         return y, self.get_label(_result)
 
-class _Predictor:
+class Predictor:
     
     def __init__(self):
         self.model = tf.keras.models.load_model('/shareddrive/working/model_code/models/mobile_net/trail_1/_1/new_samples/16k_1s_melspec-nfft-1024_a_h_cnn_dense_model.keras')
