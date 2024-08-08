@@ -3,6 +3,7 @@ import librosa
 # from transformers import pipeline
 import tensorflow as tf
 import numpy as np
+import noisereduce as nr
 
 class _Predictor:
 
@@ -46,6 +47,8 @@ class Predictor:
         self.pad_or_trunc = lambda a,i : a[0:i] if len(a) > i else a if len(a) == i else np.pad(a,(0, (i-len(a))))
 
     def process_data(self,y,sr,max_seconds):
+        y = nr.reduce_noise(y=y, sr=sr,n_fft=1024)
+        y[np.isnan(y)] = 0
         y = self.pad_or_trunc(y,sr*max_seconds)
         features = librosa.feature.melspectrogram(y=y,sr=sr,n_fft=1024)
         return features

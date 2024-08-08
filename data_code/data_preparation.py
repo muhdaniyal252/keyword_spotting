@@ -198,8 +198,8 @@ def augment(folder):
 
 if __name__ == '__main__':
     
-    main_folder = r'D:\data_code\data\hilfe_hilfe\test'
-    keyword = 'Hilfe_Hilfe'
+    main_folder = r'D:\data_code\data\hilfe'
+    keyword = 'Hilfe'
     path_to_original = f'{main_folder}/original/'
 
     path_to_trimmed = f'{main_folder}/trimmed/'
