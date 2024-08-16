@@ -57,9 +57,9 @@ def remove_outliar(source_folder,destination_folder):
     print(min_duration,max_duration)
     new_df = df.loc[(df['duration']>=min_duration) & (df['duration']<=max_duration)]
     print(new_df.describe())
-    destination_folder = '/'.join(destination_folder.replace('\\','/').split('/')[:-1])
+    destination_folder = '/'.join(destination_folder.split('/')[:-1])
     for pth in new_df['audio_path']:
-        destination_file = f"{destination_folder}/{pth.replace('\\','/').split('/')[-1]}"
+        destination_file = f"{destination_folder}/{pth.split('/')[-1]}"
         shutil.copy2(pth,destination_file)
 
 def augment(folder):
@@ -198,8 +198,8 @@ def augment(folder):
 
 if __name__ == '__main__':
     
-    main_folder = r'D:\data_code\data\hilfe'
-    keyword = 'Hilfe'
+    main_folder = '/shareddrive/working/data_code/data/hilfe_hilfe'
+    keyword = 'Hilfe_Hilfe'
     path_to_original = f'{main_folder}/original/'
 
     path_to_trimmed = f'{main_folder}/trimmed/'

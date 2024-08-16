@@ -74,8 +74,12 @@ class Predictor: #custom model 1 - #Adele
 class _Predictor: #custom model 1
     
     def __init__(self):
+<<<<<<< Updated upstream
         self.model = tf.keras.models.load_model(r"D:\model_code\server_models\custom_model_1\trail_6\16k_melspec-nfft-1024_a_h_cnn_dense_model.keras")
         # self.model = tf.keras.models.load_model('/shareddrive/working/model_code/models/mobile_net/trail_1/_1/new_samples/16k_1s_melspec-nfft-1024_a_h_cnn_dense_model.keras')
+=======
+        self.model = tf.keras.models.load_model('/shareddrive/working/model_code/models/custom_model_1/trail_3/16k_melspec-nfft-1024_a_h_cnn_dense_model.keras')
+>>>>>>> Stashed changes
         self.target_sr = 16000
         self.max_seconds = 1
         self.label = {
@@ -84,8 +88,8 @@ class _Predictor: #custom model 1
         self.pad_or_trunc = lambda a,i : a[0:i] if len(a) > i else a if len(a) == i else np.pad(a,(0, (i-len(a))))
 
     def process_data(self,y,sr,max_seconds):
-        y = nr.reduce_noise(y=y, sr=sr,n_fft=1024)
-        y[np.isnan(y)] = 0
+        #y = nr.reduce_noise(y=y, sr=sr,n_fft=1024)
+        #y[np.isnan(y)] = 0
         y = self.pad_or_trunc(y,sr*max_seconds)
         features = librosa.feature.melspectrogram(y=y,sr=sr,n_fft=1024)
         return features
