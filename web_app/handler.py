@@ -9,8 +9,10 @@ from threading import Thread
 import shutil
 from queue import Queue
 import secrets
+from synthesizer import Synthesizer
 
 predictor = Predictor()
+synthesizer = Synthesizer()
 
 class Handler:
 
@@ -49,11 +51,16 @@ class Handler:
                 bytes_io = self.pred_que.get()
                 y, (result,score) = predictor.predict(bytes_io,self.sr)
                 if result is not None:
+                    s_result = 'unknown'
+                    if result != 'unknown':
+                        s_result = 'unknown' #synthesizer.synthesize(y) or 'Unknown'
                     audio_path = self.save_audio(y,result)
                     self.results.append({
                         'prediction':result, 
+                        's_prediction':s_result, 
                         'score':f'{score}%',
-                        'path': audio_path
+                        'path': audio_path,
+                        'word_model': 'adele'
                     })
         except Exception as e: print(e)
 
