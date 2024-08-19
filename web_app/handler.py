@@ -53,7 +53,7 @@ class Handler:
                 if result is not None:
                     s_result = 'unknown'
                     if result != 'unknown':
-                        s_result = synthesizer.synthesize(bytes_io,sr) or 'Unknown'
+                        s_result = synthesizer.synthesize(y,sr) or 'Unknown'
                     audio_path = self.save_audio(y,result)
                     self.results.append({
                         'prediction':result, 
