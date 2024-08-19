@@ -1,5 +1,6 @@
 import requests
-
+import io
+from scipy.io.wavfile import write
 
 class Synthesizer:
 
@@ -17,9 +18,11 @@ class Synthesizer:
         }
 
 
-    def synthesize(self,audio_array):
-        audio_bytes = audio_array.as_bytes()
-        response = requests.post(self.url, headers=self.headers, params=self.params, data=audio_bytes)
+    def synthesize(self,audio_array,sr):
+        byte_io = io.BytesIO()
+        write(byte_io, sr, audio_array)
+        byte_io.seek(0)
+        response = requests.post(self.url, headers=self.headers, params=self.params, data=byte_io)
         if response.status_code == 200:
             try:
                 return response.json()['results']['channels'][0]['alternatives'][0]['transcript']

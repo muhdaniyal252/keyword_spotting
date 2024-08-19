@@ -49,11 +49,11 @@ class Handler:
         try:
             if not self.pred_que.empty():
                 bytes_io = self.pred_que.get()
-                y, (result,score) = predictor.predict(bytes_io,self.sr)
+                y, (result,score), sr = predictor.predict(bytes_io,self.sr)
                 if result is not None:
                     s_result = 'unknown'
                     if result != 'unknown':
-                        s_result = 'unknown' #synthesizer.synthesize(y) or 'Unknown'
+                        s_result = synthesizer.synthesize(bytes_io) or 'Unknown'
                     audio_path = self.save_audio(y,result)
                     self.results.append({
                         'prediction':result, 
