@@ -8,8 +8,13 @@ import noisereduce as nr
 class _Predictor: #custom model 3 - #Adele
     
     def __init__(self):
+<<<<<<< Updated upstream
         self.model = tf.keras.models.load_model(r"D:\model_code\server_models\custom_model_3\trail_1\16k_melspec-nfft-1024_a_cnn_dense_model.keras")
         # self.model = tf.keras.models.load_model('/shareddrive/working/model_code/models/mobile_net/trail_1/_1/new_samples/16k_1s_melspec-nfft-1024_a_h_cnn_dense_model.keras')
+=======
+        #self.model = tf.keras.models.load_model(r"D:\model_code\server_models\custom_model_2\trail_1\16k_melspec-nfft-1024_a_cnn_dense_model.keras")
+        self.model = tf.keras.models.load_model('/shareddrive/working/model_code/models/custom_model_2\trail_1\16k_melspec-nfft-1024_a_cnn_dense_model.keras')
+>>>>>>> Stashed changes
         self.target_sr = 16000
         self.max_seconds = 1
         self.label = {
@@ -74,9 +79,14 @@ class _Predictor: #custom model 1 - #Adele
 class Predictor: #custom model 1
     
     def __init__(self):
+<<<<<<< Updated upstream
         self.model = tf.keras.models.load_model(r"D:\model_code\server_models\custom_model_1\trail_8\16k_melspec-nfft-1024_a_cnn_dense_model.keras")
         # self.model = tf.keras.models.load_model('/shareddrive/working/model_code/models/mobile_net/trail_1/_1/new_samples/16k_1s_melspec-nfft-1024_a_h_cnn_dense_model.keras')
 
+=======
+        self.model = tf.keras.models.load_model(r"D:\model_code\server_models\custom_model_1\trail_6\16k_melspec-nfft-1024_a_h_cnn_dense_model.keras")
+        # self.model = tf.keras.models.load_model('/shareddrive/working/model_code/models/mobile_net/trail_1/_1/new_samples/16k_1s_melspec-nfft-1024_a_h_cnn_dense_model.keras')
+>>>>>>> Stashed changes
         self.target_sr = 16000
         self.max_seconds = 1
         self.label = {
