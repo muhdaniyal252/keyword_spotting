@@ -164,6 +164,15 @@ function getResults(){
                 newItem.appendChild(newCell);
                 
                 labels.insertBefore(newItem, labels.firstChild);
+                
+                var newCell = document.createElement('td');
+                var anchor = document.createElement('a');
+                anchor.href = obj['result']['path'];
+                n = obj['result']['path'].split('/')
+                anchor.innerHTML = n[n.length-1];
+                anchor.download = n[n.length-1];
+                newCell.appendChild(anchor);
+                newItem.appendChild(newCell);
             }
         });
     }
@@ -187,7 +196,7 @@ function getResults(){
 //                 newCell.scope = 'row';
 //                 newCell.innerHTML = obj['result']['prediction'];
 //                 newItem.appendChild(newCell);
-                
+
 //                 var newCell = document.createElement('td');
 //                 newCell.innerHTML = obj['result']['score'];
 //                 newItem.appendChild(newCell);
@@ -216,7 +225,7 @@ function getResults(){
 //                 correctButton.appendChild(correctIcon);
 //                 newCell.appendChild(correctButton);
 //                 newItem.appendChild(newCell);
-                
+
 //                 var newCell = document.createElement('td');
 //                 var adeleButton = document.createElement('button');
 //                 adeleButton.classList.add('btn');
