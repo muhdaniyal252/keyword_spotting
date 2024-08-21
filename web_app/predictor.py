@@ -68,7 +68,7 @@ class Predictor: #custom model 1 - #Adele
         y = librosa.resample(data,orig_sr=sr,target_sr=self.target_sr)
         features = self.get_features(y,sr=self.target_sr)
         pred = self.model.predict(features)
-        return y, (self.label.get(1 if pred[0] > 0.5 else 0, 'unknown'), '--'), self.target_sr
+        return y, (self.label.get(1 if pred[0] > 0.5 else 0, 'unknown'), pred[0]), self.target_sr
         # return y,(self.label.get(np.argmax(pred) if np.max(pred) >= 0.97 else 0,'unknown'),round(np.max(pred)*100,2))
 
 class _Predictor: #custom model 1

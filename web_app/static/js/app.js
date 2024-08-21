@@ -119,6 +119,10 @@ function getResults(){
                 newItem.appendChild(newCell);
 
                 var newCell = document.createElement('td');
+                newCell.innerHTML = obj['result']['score'];
+                newItem.appendChild(newCell);
+
+                var newCell = document.createElement('td');
                 newCell.innerHTML = obj['result']['prediction'];
                 newItem.appendChild(newCell);
                 
