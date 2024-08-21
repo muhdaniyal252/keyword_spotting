@@ -42,7 +42,7 @@ class Predictor: #custom model 1 - #Adele
     
     def __init__(self):
         # self.model = tf.keras.models.load_model(r"D:\model_code\server_models\custom_model_1\trail_8\16k_melspec-nfft-1024_a_cnn_dense_model.keras")
-        self.model = tf.keras.models.load_model('/shareddrive/working/model_code/models/custom_model_1/trail_9/16k_melspec-nfft-1024_a_cnn_dense_model.keras')
+        self.model = tf.keras.models.load_model('/shareddrive/working/model_code/models/custom_model_4/trail_1/16k_melspec-nfft-1024_a_cnn_dense_model.keras')
         self.target_sr = 16000
         self.max_seconds = 1
         self.label = {
@@ -68,13 +68,14 @@ class Predictor: #custom model 1 - #Adele
         y = librosa.resample(data,orig_sr=sr,target_sr=self.target_sr)
         features = self.get_features(y,sr=self.target_sr)
         pred = self.model.predict(features)
+        print(pred)
         return y, (self.label.get(1 if pred[0] > 0.5 else 0, 'unknown'), pred[0]), self.target_sr
         # return y,(self.label.get(np.argmax(pred) if np.max(pred) >= 0.97 else 0,'unknown'),round(np.max(pred)*100,2))
 
 class _Predictor: #custom model 1
     
     def __init__(self):
-        self.model = tf.keras.models.load_model(r"D:\model_code\server_models\custom_model_1\trail_6\16k_melspec-nfft-1024_a_h_cnn_dense_model.keras")
+        self.model = tf.keras.models.load_model(r"D:\model_code\server_models\custom_model_4\trail_6\16k_melspec-nfft-1024_a_h_cnn_dense_model.keras")
         # self.model = tf.keras.models.load_model('/shareddrive/working/model_code/models/mobile_net/trail_1/_1/new_samples/16k_1s_melspec-nfft-1024_a_h_cnn_dense_model.keras')
         self.target_sr = 16000
         self.max_seconds = 1
