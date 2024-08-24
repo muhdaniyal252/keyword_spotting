@@ -58,7 +58,8 @@ class Handler:
                     self.results.append({
                         'prediction':result, 
                         's_prediction':s_result, 
-                        'score':f'{score}%',
+                        'score':score,
+                        # 'score':f'{score}%',
                         'path': audio_path,
                         'word_model': 'adele'
                     })
