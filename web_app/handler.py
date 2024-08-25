@@ -49,7 +49,7 @@ class Handler:
         try:
             if not self.pred_que.empty():
                 bytes_io = self.pred_que.get()
-                y, (result,score), sr = predictor.predict(bytes_io,self.sr)
+                y, result, result_l, sr = predictor.predict(bytes_io,self.sr)
                 if result is not None:
                     s_result = 'unknown'
                     if result != 'unknown':
@@ -57,8 +57,9 @@ class Handler:
                     audio_path = self.save_audio(y,result)
                     self.results.append({
                         'prediction':result, 
+                        'l_prediction':result_l,
                         's_prediction':s_result, 
-                        'score':score,
+                        'score':'--',
                         # 'score':f'{score}%',
                         'path': audio_path,
                         'word_model': 'adele'

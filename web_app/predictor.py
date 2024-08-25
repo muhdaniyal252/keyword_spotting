@@ -1,6 +1,5 @@
 
 import librosa
-# from transformers import pipeline
 import tensorflow as tf
 import numpy as np
 import noisereduce as nr
@@ -41,8 +40,11 @@ class _Predictor: #custom model 3 - #Adele
 class Predictor: #custom model 1 - #Adele
     
     def __init__(self):
-        # self.model = tf.keras.models.load_model(r"D:\model_code\server_models\custom_model_1\trail_8\16k_melspec-nfft-1024_a_cnn_dense_model.keras")
-        self.model = tf.keras.models.load_model('/shareddrive/working/model_code/models/custom_model_4/trail_1/16k_melspec-nfft-1024_a_cnn_dense_model.keras')
+        self.lite_model = tf.interpreter = tf.lite.Interpreter(model_path="/shareddrive/working/model_code/models/custom_model_1/trail_8/16k_melspec-nfft-1024_a_cnn_dense_model.tflite")
+        self.model = tf.keras.models.load_model('/shareddrive/working/model_code/models/custom_model_1/trail_8/16k_melspec-nfft-1024_a_cnn_dense_model.keras')
+        self.lite_model.allocate_tensors()
+        self.input_details = self.lite_model.get_input_details()
+        self.output_details = self.lite_model.get_output_details()
         self.target_sr = 16000
         self.max_seconds = 1
         self.label = {
@@ -67,9 +69,15 @@ class Predictor: #custom model 1 - #Adele
         data,_ = librosa.load(data,sr=sr)
         y = librosa.resample(data,orig_sr=sr,target_sr=self.target_sr)
         features = self.get_features(y,sr=self.target_sr)
+        
         pred = self.model.predict(features)
-        print(pred)
-        return y, (self.label.get(1 if pred[0] > 0.5 else 0, 'unknown'), pred[0]), self.target_sr
+
+        self.lite_model.set_tensor(self.input_details[0]['index'], features)
+        self.lite_model.invoke()
+        output_data = self.lite_model.get_tensor(self.output_details[0]['index'])
+        lite_pred = output_data
+
+        return y, self.label.get(1 if pred[0] > 0.5 else 0, 'unknown'), self.label.get(1 if lite_pred[0] > 0.5 else 0, 'unknown'), self.target_sr
         # return y,(self.label.get(np.argmax(pred) if np.max(pred) >= 0.97 else 0,'unknown'),round(np.max(pred)*100,2))
 
 class _Predictor: #custom model 1
@@ -104,36 +112,6 @@ class _Predictor: #custom model 1
         pred = self.model.predict(features)
         return y, (self.label.get(1 if pred[0] > 0.5 else 0, 'unknown'), '--')
         return y,(self.label.get(np.argmax(pred) if np.max(pred) >= 0.97 else 0,'unknown'),round(np.max(pred)*100,2))
-
-class _Predictor: #wav2vec
-
-    def __init__(self):
-        model_pth = '/shareddrive/work/model_code/models/wav2vec2/trail_1/wav2vec2-finetune'
-        self.pipe = pipeline("audio-classification", model=model_pth)
-        self.target_sr = 16000
-
-
-    def get_label(self,x):
-        lbl = None
-        mx_n = -1
-        for i in x:
-            if i['score'] > mx_n:
-                mx_n = i['score']
-                lbl = i['label']
-        return lbl,round(mx_n*100,2)
-        if lbl != 'unknown' and mx_n > 0.83:
-            return lbl,round(mx_n*100,2)
-        return 'unknown', round(mx_n*100,2)
-        if mx_n > 0.99: return f'{lbl} - {mx_n}' if y != 'unknown' else None
-        return None
-    
-    def predict(self,data,sr):
-        
-        data,_ = librosa.load(data,sr=sr)
-        y = librosa.resample(data,orig_sr=sr,target_sr=self.target_sr)
-        _result = self.pipe(y)
-        print(_result)
-        return y, self.get_label(_result)
 
 class _Predictor: #dummy
     
