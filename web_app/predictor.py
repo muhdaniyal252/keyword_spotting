@@ -40,8 +40,8 @@ class _Predictor: #custom model 3 - #Adele
 class Predictor: #custom model 1 - #Adele
     
     def __init__(self):
-        self.lite_model = tf.interpreter = tf.lite.Interpreter(model_path="/shareddrive/working/model_code/models/custom_model_1/trail_8/16k_melspec-nfft-1024_a_cnn_dense_model.tflite")
-        self.model = tf.keras.models.load_model('/shareddrive/working/model_code/models/custom_model_1/trail_8/16k_melspec-nfft-1024_a_cnn_dense_model.keras')
+        self.lite_model = tf.interpreter = tf.lite.Interpreter(model_path="/shareddrive/working/model_code/models/custom_model_4/trail_1/16k_melspec-nfft-1024_a_cnn_dense_model.tflite")
+        self.model = tf.keras.models.load_model('/shareddrive/working/model_code/models/custom_model_4/trail_1/16k_melspec-nfft-1024_a_cnn_dense_model.keras')
         self.lite_model.allocate_tensors()
         self.input_details = self.lite_model.get_input_details()
         self.output_details = self.lite_model.get_output_details()
