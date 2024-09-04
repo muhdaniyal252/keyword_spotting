@@ -1,20 +1,101 @@
 # 1. System information
 
-- OS Platform and Distribution (e.g., Linux Ubuntu 16.04): Ubuntu 22.04
-- TensorFlow installation (pip package or built from source): pip package
-- TensorFlow library (version, if pip package or github SHA, if built from source): Tensorflow 2.13.0
+- Ubuntu 22.04 (L40 GPU)
+- pip package
+- Tensorflow 2.13.0, tflite-support 0.4.4
 
-### 2. Code
+# 2. Code
 
+## Input and Output shape
+
+ Input: \[128,32,1\]
+
+ Output: \[1\]
+
+## Model Architecture and Training and saving
+```
+import tensorflow as tf
+
+def get_model(
+        input_shape,
+        output_neurons=1,
+        output_activation='sigmoid',
+        loss=tf.keras.losses.binary_crossentropy,
+        lr=0.0001
+):
+    _input = tf.keras.layers.Input(shape=input_shape)
+    x = tf.keras.layers.Conv2D(512,kernel_size=3,padding='valid',activation='relu')(_input)
+    x = tf.keras.layers.Conv2D(256,kernel_size=3,padding='valid',activation='relu')(x)
+    x = tf.keras.layers.MaxPool2D((2,2))(x)
+    x = tf.keras.layers.Conv2D(128,kernel_size=3,padding='valid',activation='relu')(x)
+    x = tf.keras.layers.Dropout(0.5)(x)
+    x = tf.keras.layers.Conv2D(128,kernel_size=3,padding='valid',activation='relu')(x)
+    x = tf.keras.layers.MaxPool2D((2,2))(x)
+    x = tf.keras.layers.Conv2D(64,kernel_size=3,padding='valid',activation='relu')(x)
+    x = tf.keras.layers.MaxPool2D((2,2))(x)
+    x = tf.keras.layers.Flatten()(x)
+    x = tf.keras.layers.Dense(1024,activation='relu')(x)
+    x = tf.keras.layers.Dropout(0.3)(x)
+    x = tf.keras.layers.Dense(1024,activation='relu')(x)
+    x = tf.keras.layers.Dropout(0.5)(x)
+    x = tf.keras.layers.Dense(1024,activation='relu')(x)
+    x = tf.keras.layers.Dropout(0.7)(x)
+    x = tf.keras.layers.Dense(1024,activation='relu')(x)
+    x = tf.keras.layers.Dense(10,activation='relu')(x)
+    outputs = tf.keras.layers.Dense(output_neurons,activation=output_activation,kernel_regularizer=tf.keras.regularizers.L2(l2=0.01))(x)
+    model = tf.keras.Model(inputs=_input,outputs=outputs)
+
+    model.compile(
+        loss=loss,
+        optimizer=tf.keras.optimizers.Adam(learning_rate=lr),
+        metrics=['accuracy'],
+    )
+
+    return model
+
+model = get_model(
+        input_shape=input_shape,
+        lr=0.001
+)
+
+reduce_lr = tf.keras.callbacks.ReduceLROnPlateau(monitor='val_accuracy',factor=0.1,patience=5,mode='max')
+early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_accuracy',patience=1,mode='max',restore_best_weights=True,start_from_epoch=10)
+with tf.device('/gpu'):
+    history = model.fit(train,epochs=3,validation_data=val,verbose=1,callbacks=[reduce_lr,early_stopping])
+
+model.save('model.keras')
 
 ```
+
+## Conversion to tf lite model
+
+```
+import tensorflow as tf
+
+model_path = 'model.keras'
+lite_model_path = model_path.replace('keras','tflite')
+
+model = tf.keras.models.load_model(model_path)
+
+converter = tf.lite.TFLiteConverter.from_keras_model(model)
+converter.optimizations = [tf.lite.Optimize.DEFAULT]
+tflite_model = converter.convert()
+
+with open(lite_model_path, 'wb') as f:
+    f.write(tflite_model)
+```
+
+## Adding metadata
+
+```
+actual_model = "model.keras"
+model_file = "model.tflite"
+export_model_file = "model_meta.tflite"
+
 from tflite_support import metadata_schema_py_generated as _metadata_fb
 from tflite_support import metadata as _metadata
 from tflite_support.metadata_writers import writer_utils
 import flatbuffers
-
-model_file = "/shareddrive/working/model_code/models/custom_model_4/trail_1/16k_melspec-nfft-1024_a_cnn_dense_model.tflite"
-export_model_file = "/shareddrive/working/model_code/models/custom_model_4/trail_1/16k_melspec-nfft-1024_a_cnn_dense_model_meta.tflite"
 
 model_meta = _metadata_fb.ModelMetadataT()
 model_meta.name = "Binary Classification Model"
@@ -57,34 +138,45 @@ builder.Finish(
     _metadata.MetadataPopulator.METADATA_FILE_IDENTIFIER
 )
 metadata_buf = builder.Output()
-```
-#### Option A: Reference colab notebooks
 
-1)  Reference [TensorFlow Model Colab](https://colab.research.google.com/gist/ymodak/e96a4270b953201d5362c61c1e8b78aa/tensorflow-datasets.ipynb?authuser=1): Demonstrate how to build your TF model.
-2)  Reference [TensorFlow Lite Model Colab](https://colab.research.google.com/gist/ymodak/0dfeb28255e189c5c48d9093f296e9a8/tensorflow-lite-debugger-colab.ipynb): Demonstrate how to convert your TF model to a TF Lite model (with quantization, if used) and run TFLite Inference (if possible).
+populator = _metadata.MetadataPopulator.with_model_file(model_file)
+populator.load_metadata_buffer(metadata_buf)
+populator.load_associated_files(["labels.txt"])
+populator.populate()
 
-```
-(You can paste links or attach files by dragging & dropping them below)
-- Provide links to your updated versions of the above two colab notebooks.
-- Provide links to your TensorFlow model and (optionally) TensorFlow Lite Model.
-```
-
-#### Option B: Paste your code here or provide a link to a custom end-to-end colab
+displayer = _metadata.MetadataDisplayer.with_model_file(export_model_file)
+export_json_file = os.path.join(os.path.dirname(export_model_file), "metadata.json")
+json_file = displayer.get_metadata_json()
+with open(export_json_file, "w") as f:
+    f.write(json_file)
 
 ```
-(You can paste links or attach files by dragging & dropping them below)
-- Include code to invoke the TFLite Converter Python API and the errors.
-- Provide links to your TensorFlow model and (optionally) TensorFlow Lite Model.
+
+# Description
+
+I am developing a keyword spotting (binary classification) model that is later needed to be converted to tf lite and used in mobile device. 
+
+For that, I built a model architecture (given above in code section). Trained is on mel spectrogram (generated using librosa). After training, I saved the model, converted to tf lite using the code mentioned above. 
+
+Now I am at the point where i need to add metadata to the model. For that, I am refering the code given on official [documentation](https://ai.google.dev/edge/litert/models/metadata), with some necessory changes.
+
+# Error Facing
+
+I am facing the error at the time of adding meta data to the tflite model. When it comes to this point 
+```
+builder = flatbuffers.Builder(0)
+meta_offset = model_meta.Pack(builder)
+builder.Finish(
+    meta_offset,
+    _metadata.MetadataPopulator.METADATA_FILE_IDENTIFIER
+)
+metadata_buf = builder.Output()
 ```
 
-### 3. Failure after conversion
-If the conversion is successful, but the generated model is wrong, then state what is wrong:
+It raises the error and exits. 
 
-- Model produces wrong results and/or has lesser accuracy.
-- Model produces correct results, but it is slower than expected.
+The error is 
+```error: required argument is not an integer ```
 
-### 4. (optional) RNN conversion support
-If converting TF RNN to TFLite fused RNN ops, please prefix [RNN] in the title.
+I am unable to sort that error. Kindly assist me regarding that and provide me some solution for my problem.
 
-### 5. (optional) Any other info / logs
-Include any logs or source code that would be helpful to diagnose the problem. If including tracebacks, please include the full traceback. Large logs and files should be attached.

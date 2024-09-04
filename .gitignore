@@ -5,6 +5,10 @@ __pycache__/
 
 *.wav
 
+*.keras
+*.tflite
+*.h5
+
 # C extensions
 *.so
 
