@@ -47,7 +47,7 @@ class Handler:
         os.makedirs(dst_pth,exist_ok=True)
         file_name = f'{secrets.token_hex(5)}_{label}.wav'
         file_path = os.path.join(dst_pth,file_name)
-        sf.write(file_path,y,predictor.target_sr)
+        sf.write(file_path,y,a_predictor.target_sr)
         tmp_path = file_path.replace('\\','/').split('static')[-1]
         p = f'/static{tmp_path}'
         return p
