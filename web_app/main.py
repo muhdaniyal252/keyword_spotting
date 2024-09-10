@@ -20,8 +20,10 @@ def index():
 @app.route('/set_sr', methods=['POST'])
 def set_sr():
     handler.sr = int(request.form['sr'])
-    handler._l = handler.sr//2
-    handler.data = np.zeros(handler.sr)
+    handler._al = handler.sr//2
+    handler._hl = int(handler.sr*2.5)//2
+    handler.a_data = np.zeros(handler.sr)
+    handler.h_data = np.zeros(int(handler.sr*2.5))
     return jsonify('SR saved successfully')
 
 @app.route('/upload', methods=['POST'])
@@ -30,7 +32,8 @@ def upload():
     audio_bytes = BytesIO(audio.read())
     audio_bytes.seek(0)  
     new_data, _ = sf.read(audio_bytes)
-    handler.audio_data = np.append(handler.audio_data,new_data)
+    handler.a_audio_data = np.append(handler.a_audio_data,new_data)
+    handler.h_audio_data = np.append(handler.h_audio_data,new_data)
     return jsonify({'status':'success'})
 
 @app.route('/clear', methods=['POST'])
