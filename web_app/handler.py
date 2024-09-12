@@ -102,7 +102,7 @@ class Handler:
                 sf.write(a_b,a_data,self.sr,format='WAV')
                 a_b.seek(0)  
                 self.a_pred_que.put(a_b)
-                h_data = self.a_data_que.get()
+                h_data = self.h_data_que.get()
                 h_b = BytesIO()
                 sf.write(h_b,h_data,self.sr,format='WAV')
                 h_b.seek(0)  
