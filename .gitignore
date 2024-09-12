@@ -8,6 +8,7 @@ __pycache__/
 *.keras
 *.tflite
 *.h5
+*.onnx
 
 # C extensions
 *.so
