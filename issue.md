@@ -180,3 +180,27 @@ The error is
 
 I am unable to sort that error. Kindly assist me regarding that and provide me some solution for my problem.
 
+
+
+Dear Concerned Authority,
+
+I have been facing issue regarding creating a tflite model in order to run it on mobile device (both IOS and Android).
+
+The desired process is to first trian the model, then convert it to tflite model and then add metadata to it.
+
+I am stuck at the part where we need to add metadata to it.
+
+I am using the Tensorflow version 2.13.0. The reason behind using this version of tensorflow is to make it compatible with the tflite-support package. 
+
+Since the last update on tflite-support package was made back in 2023 july, at that time, above mentioned tensorflow version was the latest in public, thus compatible with tflite-support. 
+
+The main point where I am stuck is that where I am trying to add meta data to the tflite model. 
+
+This issue is reported on official tensorflow repo as well. 
+The link of the bug is: https://github.com/tensorflow/tensorflow/issues/75089
+
+To regenerate the bug on your end, you this colab notebook: https://colab.research.google.com/drive/1daZ95UcBm2UQbRLh-d76ySDctTSd8Ydi#scrollTo=o2-hvIyBhmkk
+
+I kindly request to solve this issue or let me know which version of tensorflow and tflite-support do I use in order to get my development done. 
+
+Thank you. 
