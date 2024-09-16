@@ -8,10 +8,8 @@ import noisereduce as nr
 class H_Predictor: #custom model 1 - #Adele
     
     def __init__(self):
-        # self.lite_model = tf.interpreter = tf.lite.Interpreter(model_path="/shareddrive/working/model_code/models/custom_model_4/trail_1/16k_melspec-nfft-1024_a_cnn_dense_model.tflite")
-        # self.model = tf.keras.models.load_model('/shareddrive/working/model_code/models/custom_model_4/trail_1/16k_melspec-nfft-1024_a_cnn_dense_model.keras')
-        self.lite_model = tf.interpreter = tf.lite.Interpreter(model_path=r"C:\Users\muhammaddaniyal2\Desktop\keyword_spotting\models\h_model.tflite")
-        self.model = tf.keras.models.load_model(r'C:\Users\muhammaddaniyal2\Desktop\keyword_spotting\models\h_model.keras')
+        self.lite_model = tf.lite.Interpreter(model_path="/shareddrive/working/model_code/models/custom_model_4/trail_1/16k_melspec-nfft-1024_a_cnn_dense_model.tflite")
+        self.model = tf.keras.models.load_model('/shareddrive/working/model_code/models/custom_model_4/trail_1/16k_melspec-nfft-1024_a_cnn_dense_model.keras')
         self.lite_model.allocate_tensors()
         self.input_details = self.lite_model.get_input_details()
         self.output_details = self.lite_model.get_output_details()
