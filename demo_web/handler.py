@@ -34,6 +34,9 @@ class Handler:
         self.h_pred_que = Queue()
         self.a_data_que = Queue()
         self.h_data_que = Queue()
+        self.progress = 0
+        self.total_items = 0
+        self.completed = True
         data_dir = f'{root_path}/data/'
         self.data_dirs = {
             'unknown' : f'{data_dir}/unknown',
@@ -71,6 +74,7 @@ class Handler:
                         'path': audio_path,
                         'word_model': 'adele'
                     })
+                self.progress += 1
         except Exception as e: print(e)
         
     def _h_proceed_prediction(self):
@@ -92,6 +96,7 @@ class Handler:
                         'path': audio_path,
                         'word_model': 'hilfe'
                     })
+                    self.progress += 1
         except Exception as e: print(e)
 
     def predict(self):
@@ -111,12 +116,14 @@ class Handler:
                     self.h_pred_que.put(h_b)
             self._a_proceed_prediction()
             self._h_proceed_prediction()
+            self.completed = True
                 # Thread(target=self._proceed_prediction).start()
         except Exception as e: 
             print(e)
 
     def process(self):
         while self.a_audio_data.size > self.sr or self.h_audio_data.size > int(self.sr*2.5):
+            self.completed = False
             if self.a_audio_data.size > self.sr:
                 self.a_data[:self._al] = self.a_data[self._al:]
                 self.a_data[self._al:] = self.a_audio_data[:self._al]
@@ -131,8 +138,11 @@ class Handler:
 
                 self.h_data_que.put(self.h_data.copy())
 
-        self.predict()
-        return self.results
+        self.total_items = len(self.h_data_que.queue) + len(self.a_data_que.queue)
+
+        Thread(target=self.predict).start()
+
+        return self.total_items
         
     def start_process(self):
         return self.process()

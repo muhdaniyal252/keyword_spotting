@@ -1,5 +1,5 @@
+let totalItems = 0;
 var recorder;
-
 var audioContext = new AudioContext();
 const constraints = { audio:true, video:false }
 _xhr = new XMLHttpRequest();
@@ -36,7 +36,6 @@ function stopRecording(){
 
 function postRecordings(blob){
     var xhr = new XMLHttpRequest();
-
     var fd = new FormData();
     fd.append('audio', blob, 'recorded_audio');
     xhr.open("POST", "/upload", true);
@@ -44,8 +43,11 @@ function postRecordings(blob){
     xhr.onload = function(e){
         if (this.readyState === 4){
             if (this.status == 200){
-                result = JSON.parse(e.target.response)['result'];
-                result.map(populateResult)
+                var data = JSON.parse(e.target.response);
+                totalItems = data.total_items;
+                document.getElementById('total-items').innerText = `Total Items to Process: ${totalItems}`;
+                document.getElementById('progress-section').style.display = 'block';
+                updateProgress();
             }
         }
     }
@@ -67,6 +69,26 @@ function move(path,prediction,word_model,result){
     fd.append('path', path);
     fd.append('label', label);
     xhr.send(fd);
+}
+
+
+function updateProgress() {
+    fetch('/get_result')
+        .then(response => response.json())
+        .then(data => {
+            console.log(data)
+            const progressPercentage = (data.result.progress / totalItems) * 100;
+            document.getElementById('progress-bar').style.width = progressPercentage + '%';
+
+            if (data.progress < totalItems) {
+                setTimeout(updateProgress, 500);  // Poll every 500ms
+            } 
+            // else {
+            //     // Processing done, populate the results
+            //     document.getElementById('progress-section').style.display = 'none';
+            //     data.result.map(populateResult);
+            // }
+        });
 }
 
 function populateResult(obj){

@@ -33,18 +33,23 @@ def upload():
     new_data, _ = sf.read(audio_bytes)
     handler.a_audio_data = np.append(handler.a_audio_data,new_data)
     handler.h_audio_data = np.append(handler.h_audio_data,new_data)
-    results = handler.process().copy()
-    handler.results = []
-    return jsonify({'result':results})
+    handler.progress = 0
+    handler.total_items = 0
+    total_items = handler.process()
+    return jsonify({'total_items':total_items})
 
 @app.route('/clear', methods=['POST'])
 def clear():
     handler.reset()
     return jsonify({'status':'success'})
 
-@app.route('/get_result')
+@app.route('/get_result',methods=['POST','GET'])
 def get_result():
-    r = handler.results.pop(0) if handler.results else None
+    if handler.completed:
+        r = handler.results.copy()
+        handler.results = []
+    else:
+        r = [handler.progress]
     return jsonify({'result':r})
 
 @app.route('/move', methods=['POST'])
