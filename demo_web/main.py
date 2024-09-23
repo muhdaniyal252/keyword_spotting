@@ -33,7 +33,9 @@ def upload():
     new_data, _ = sf.read(audio_bytes)
     handler.a_audio_data = np.append(handler.a_audio_data,new_data)
     handler.h_audio_data = np.append(handler.h_audio_data,new_data)
-    return jsonify({'status':'success'})
+    results = handler.process().copy()
+    handler.results = []
+    return jsonify({'result':results})
 
 @app.route('/clear', methods=['POST'])
 def clear():

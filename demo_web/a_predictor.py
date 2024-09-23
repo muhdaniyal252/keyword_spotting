@@ -1,9 +1,15 @@
 
-import librosa
+import os
 import tensorflow as tf
 import numpy as np
-import noisereduce as nr
 from predictor import Predictor
+
+if os.name == 'nt':
+    lite_model = r'D:\keyword_spotting\server_models\custom_model_4\trail_1\16k_melspec-nfft-1024_a_cnn_dense_model.tflite'
+    model = r'D:\keyword_spotting\server_models\custom_model_4\trail_1\16k_melspec-nfft-1024_a_cnn_dense_model.keras'
+else:
+    lite_model = "/shareddrive/working/model_code/models/custom_model_4/trail_1/16k_melspec-nfft-1024_a_cnn_dense_model.tflite"
+    model = '/shareddrive/working/model_code/models/custom_model_4/trail_1/16k_melspec-nfft-1024_a_cnn_dense_model.keras'
 
 
 class A_Predictor(Predictor): #custom model 1 - #Adele
@@ -11,8 +17,9 @@ class A_Predictor(Predictor): #custom model 1 - #Adele
 
     def __init__(self):
         super().__init__()
-        self.lite_model = tf.lite.Interpreter(model_path="/shareddrive/working/model_code/models/custom_model_4/trail_1/16k_melspec-nfft-1024_a_cnn_dense_model.tflite")
-        self.model = tf.keras.models.load_model('/shareddrive/working/model_code/models/custom_model_4/trail_1/16k_melspec-nfft-1024_a_cnn_dense_model.keras')
+
+        self.lite_model = tf.lite.Interpreter(model_path=lite_model)
+        self.model = tf.keras.models.load_model(model)
         self.lite_model.allocate_tensors()
         self.input_details = self.lite_model.get_input_details()
         self.output_details = self.lite_model.get_output_details()

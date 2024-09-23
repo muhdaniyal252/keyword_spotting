@@ -96,17 +96,19 @@ class Handler:
 
     def predict(self):
         try:
-            while not (self.a_data_que.empty() and self.h_data_que.empty()) :
-                a_data = self.a_data_que.get()
-                a_b = BytesIO()
-                sf.write(a_b,a_data,self.sr,format='WAV')
-                a_b.seek(0)  
-                self.a_pred_que.put(a_b)
-                h_data = self.h_data_que.get()
-                h_b = BytesIO()
-                sf.write(h_b,h_data,self.sr,format='WAV')
-                h_b.seek(0)  
-                self.h_pred_que.put(h_b)
+            while not self.a_data_que.empty() or not self.h_data_que.empty():
+                if not self.a_data_que.empty():
+                    a_data = self.a_data_que.get()
+                    a_b = BytesIO()
+                    sf.write(a_b,a_data,self.sr,format='WAV')
+                    a_b.seek(0)  
+                    self.a_pred_que.put(a_b)
+                if not self.h_data_que.empty():
+                    h_data = self.h_data_que.get()
+                    h_b = BytesIO()
+                    sf.write(h_b,h_data,self.sr,format='WAV')
+                    h_b.seek(0)  
+                    self.h_pred_que.put(h_b)
             self._a_proceed_prediction()
             self._h_proceed_prediction()
                 # Thread(target=self._proceed_prediction).start()
@@ -114,19 +116,20 @@ class Handler:
             print(e)
 
     def process(self):
-        while self.a_audio_data.size > self.sr and self.h_audio_data.size > int(self.sr*2.5):
+        while self.a_audio_data.size > self.sr or self.h_audio_data.size > int(self.sr*2.5):
+            if self.a_audio_data.size > self.sr:
+                self.a_data[:self._al] = self.a_data[self._al:]
+                self.a_data[self._al:] = self.a_audio_data[:self._al]
+                self.a_audio_data = self.a_audio_data[self._al:]
 
-            self.a_data[:self._al] = self.a_data[self._al:]
-            self.a_data[self._al:] = self.a_audio_data[:self._al]
-            self.a_audio_data = self.a_audio_data[self._al:]
+                self.a_data_que.put(self.a_data.copy())
 
-            self.a_data_que.put(self.a_data.copy())
+            if self.h_audio_data.size > int(self.sr*2.5):
+                self.h_data[:self._hl] = self.h_data[self._hl:]
+                self.h_data[self._hl:] = self.h_audio_data[:self._hl]
+                self.h_audio_data = self.h_audio_data[self._hl:]
 
-            self.h_data[:self._hl] = self.h_data[self._hl:]
-            self.h_data[self._hl:] = self.h_audio_data[:self._hl]
-            self.h_audio_data = self.h_audio_data[self._hl:]
-
-            self.h_data_que.put(self.h_data.copy())
+                self.h_data_que.put(self.h_data.copy())
 
         self.predict()
         return self.results
