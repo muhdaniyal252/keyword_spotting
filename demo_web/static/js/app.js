@@ -18,6 +18,7 @@ clearButton.addEventListener("click", clearResults);
 
 
 function startRecording(){
+    clearResults()
     navigator.mediaDevices.getUserMedia(constraints).then(stream =>{
         input = audioContext.createMediaStreamSource(stream);
         recorder = new Recorder(input, {numChannels: 1});
@@ -77,17 +78,17 @@ function updateProgress() {
         .then(response => response.json())
         .then(data => {
             console.log(data)
-            const progressPercentage = (data.result.progress / totalItems) * 100;
-            document.getElementById('progress-bar').style.width = progressPercentage + '%';
+            const progressPercentage = (data.result[0] / totalItems) * 100;
+            progressbar.style.width = progressPercentage + '%';
 
-            if (data.progress < totalItems) {
-                setTimeout(updateProgress, 500);  // Poll every 500ms
+            if (data.result[0] < totalItems) {
+                setTimeout(updateProgress, 1000);  // Poll every 500ms
             } 
-            // else {
-            //     // Processing done, populate the results
-            //     document.getElementById('progress-section').style.display = 'none';
-            //     data.result.map(populateResult);
-            // }
+            else {
+                // Processing done, populate the results
+                document.getElementById('progress-section').style.display = 'none';
+                data.result.map(populateResult);
+            }
         });
 }
 
@@ -179,6 +180,3 @@ function clearResults(){
     xhr.open("POST", "/clear", true);
     xhr.send();
 }
-
-postRecordings()
-getResults()

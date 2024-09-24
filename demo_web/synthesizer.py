@@ -19,6 +19,7 @@ class Synthesizer:
 
 
     def synthesize(self,audio_array,sr):
+        return 'unknown'
         byte_io = io.BytesIO()
         write(byte_io, sr, audio_array)
         byte_io.seek(0)
