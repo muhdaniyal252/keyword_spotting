@@ -29,6 +29,14 @@ function startRecording(){
     });
 }
 
+function showAudio(blob){
+    var url = URL.createObjectURL(blob);
+    var au = document.createElement('audio');
+    au.controls = true;
+    au.src = url;
+    audio.appendChild(au);
+}
+
 function stopRecording(){
     recorder.stop();
     recorder.exportWAV(postRecordings)
@@ -36,6 +44,7 @@ function stopRecording(){
 }
 
 function postRecordings(blob){
+    showAudio(blob);
     var xhr = new XMLHttpRequest();
     var fd = new FormData();
     fd.append('audio', blob, 'recorded_audio');
@@ -161,8 +170,6 @@ function populateResult(obj){
     newCell.appendChild(inCorrectButton);
     newItem.appendChild(newCell);
     
-    labels.insertBefore(newItem, labels.firstChild);
-    
     var newCell = document.createElement('td');
     var anchor = document.createElement('a');
     anchor.href = obj['path'];
@@ -171,11 +178,14 @@ function populateResult(obj){
     anchor.download = n[n.length-1];
     newCell.appendChild(anchor);
     newItem.appendChild(newCell);
+    
+    labels.insertBefore(newItem, labels.firstChild);
 }
 
 
 function clearResults(){
     labels.innerHTML = '';
+    audio.innerHTML = '';
     var xhr = new XMLHttpRequest();
     xhr.open("POST", "/clear", true);
     xhr.send();
