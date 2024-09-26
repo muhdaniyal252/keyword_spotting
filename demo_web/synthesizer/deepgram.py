@@ -1,8 +1,9 @@
 import requests
 import io
 from scipy.io.wavfile import write
+from synthesizer import Synthesizer
 
-class Synthesizer:
+class DeepGram(Synthesizer):
 
     def __init__(self):
         self.url = 'https://api.deepgram.com/v1/listen'

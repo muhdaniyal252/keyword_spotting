@@ -1,6 +1,5 @@
-from a_predictor import A_Predictor
-from h_predictor import H_Predictor
-import time
+from predictor.a_predictor import A_Predictor
+from predictor.h_predictor import H_Predictor
 import numpy as np
 import datetime 
 import os
@@ -10,11 +9,11 @@ from threading import Thread
 import shutil
 from queue import Queue
 import secrets
-from synthesizer import Synthesizer
+from synthesizer.deepgram import DeepGram
 
-a_predictor = A_Predictor()
-h_predictor = H_Predictor()
-synthesizer = Synthesizer()
+# a_predictor = A_Predictor()
+# h_predictor = H_Predictor()
+synthesizer = DeepGram()
 
 class Handler:
 
