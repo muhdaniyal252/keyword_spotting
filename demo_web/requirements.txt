@@ -10,3 +10,4 @@ tensorflow==2.13.0
 # transformers==4.42.4
 typing_extensions #==4.12.2
 noisereduce
+azure-cognitiveservices-speech==1.40.0

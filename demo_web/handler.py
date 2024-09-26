@@ -11,8 +11,8 @@ from queue import Queue
 import secrets
 from synthesizer.deepgram import DeepGram
 
-# a_predictor = A_Predictor()
-# h_predictor = H_Predictor()
+a_predictor = A_Predictor()
+h_predictor = H_Predictor()
 synthesizer = DeepGram()
 
 class Handler:
