@@ -9,11 +9,12 @@ from threading import Thread
 import shutil
 from queue import Queue
 import secrets
-from synthesizer.deepgram import DeepGram
+# from synthesizer.deepgram import DeepGram as Synthesizer
+from synthesizer.microsoft import MicroSoft as Synthesizer
 
 a_predictor = A_Predictor()
 h_predictor = H_Predictor()
-synthesizer = DeepGram()
+synthesizer = Synthesizer()
 
 class Handler:
 
