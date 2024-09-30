@@ -15,13 +15,16 @@ class MicroSoft(Synthesizer):
 
 
     def synthesize(self, audio_array, sr):
-        byte_io = io.BytesIO()
-        write(byte_io, sr, audio_array)
-        byte_io.seek(0)
-        push_stream = speechsdk.audio.PushAudioInputStream()
-        push_stream.write(byte_io.read())
-        push_stream.close()
-        audio_config = speechsdk.audio.AudioConfig(stream=push_stream)
+        audio_file_path = 'aud.wav'
+        write(audio_file_path, sr, audio_array)
+        # byte_io = io.BytesIO()
+        # write(byte_io, sr, audio_array)
+        # byte_io.seek(0)
+        # push_stream = speechsdk.audio.PushAudioInputStream()
+        # push_stream.write(byte_io.read())
+        # push_stream.close()
+        # audio_config = speechsdk.audio.AudioConfig(stream=push_stream)
+        audio_config = speechsdk.audio.AudioConfig(filename=audio_file_path)
         speech_recognizer = speechsdk.SpeechRecognizer(speech_config=self.speech_config, audio_config=audio_config)
         speech_recognition_result = speech_recognizer.recognize_once_async().get()
         return speech_recognition_result.text
