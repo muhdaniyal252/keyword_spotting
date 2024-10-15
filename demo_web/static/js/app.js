@@ -20,13 +20,14 @@ makePreds.addEventListener("click", makePredictions);
 function makePredictions(){
     clearResults();
     const file = audioFile4Pred.files[0];
+    audioFile4Pred.value = null;
     if (!file) {
         alert('Please select an audio file.');
         return;
     }
     var reader = new FileReader();
     reader.readAsArrayBuffer(file);
-    
+
     reader.onload = function(e) {
         var audioBlob = new Blob([e.target.result], { type: file.type });
         postRecordings(audioBlob);
