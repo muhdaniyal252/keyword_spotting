@@ -32,12 +32,22 @@
             </div>
         </div>
     </div>
-    
-        <h1 class="my-3">Audio Streaming</h1>
-
-        <button id="startButton" class="btn btn-primary">Start</button>
-        <button id="stopButton" class="btn btn-info">Stop</button>
-        <button id="clearButton" class="btn btn-secondary">Clear</button>
+        <div class="row">
+            <div class="col">
+                <h1 class="my-3">Audio Streaming</h1>
+                <button id="startButton" class="btn btn-primary">Start</button>
+                <button id="stopButton" class="btn btn-info">Stop</button>
+                <button id="clearButton" class="btn btn-secondary">Clear</button>
+            </div>
+            <div class="col">
+                <h1 class="my-3">Upload Audio</h1>
+                <div class="mb-3">
+                    <label for="audioFile4Pred" class="form-label">Please Upload the audio to make predictions upon</label>
+                    <input class="form-control" type="file" id="audioFile4Pred">
+                </div>
+                <button id="makePreds" class="btn btn-warning">Start processing</button>
+            </div>
+        </div>
         <h3 class="my-4">Predictions</h3>
         <div id="audio"></div>
         <table class="table">

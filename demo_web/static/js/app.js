@@ -15,10 +15,30 @@ _xhr.onload = function(e){
 startButton.addEventListener("click", startRecording);
 stopButton.addEventListener("click", stopRecording);
 clearButton.addEventListener("click", clearResults);
+makePreds.addEventListener("click", makePredictions);
 
+function makePredictions(){
+    clearResults();
+    const file = audioFile4Pred.files[0];
+    if (!file) {
+        alert('Please select an audio file.');
+        return;
+    }
+    var reader = new FileReader();
+    reader.readAsArrayBuffer(file);
+    
+    reader.onload = function(e) {
+        var audioBlob = new Blob([e.target.result], { type: file.type });
+        postRecordings(audioBlob);
+    };
+
+    reader.onerror = function(error) {
+        console.error("File could not be read: ", error);
+    };
+}
 
 function startRecording(){
-    clearResults()
+    clearResults();
     navigator.mediaDevices.getUserMedia(constraints).then(stream =>{
         input = audioContext.createMediaStreamSource(stream);
         recorder = new Recorder(input, {numChannels: 1});
@@ -34,7 +54,12 @@ function showAudio(blob){
     var au = document.createElement('audio');
     au.controls = true;
     au.src = url;
+    var down_aud = document.createElement('a');
+    down_aud.href = url;
+    down_aud.innerHTML = 'Download audio';
     audio.appendChild(au);
+    audio.appendChild(document.createElement('br'));
+    audio.appendChild(down_aud);
 }
 
 function stopRecording(){

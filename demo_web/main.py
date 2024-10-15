@@ -6,6 +6,7 @@ from io import BytesIO
 import soundfile as sf
 import os
 import time
+from pydub import AudioSegment
 from threading import Thread
 
 app = Flask(__name__)
@@ -30,6 +31,12 @@ def upload():
     audio = request.files['audio']
     audio_bytes = BytesIO(audio.read())
     audio_bytes.seek(0)  
+    audio_format = audio.content_type.split('/')[1]  
+    if audio_format != 'wav':
+        sound = AudioSegment.from_file(audio_bytes, format=audio_format)
+        audio_bytes = BytesIO()
+        sound.export(audio_bytes, format='wav')
+        audio_bytes.seek(0)
     new_data, _ = sf.read(audio_bytes)
     handler.a_audio_data = np.append(handler.a_audio_data,new_data)
     handler.h_audio_data = np.append(handler.h_audio_data,new_data)
@@ -47,6 +54,7 @@ def clear():
 def get_result():
     if handler.completed:
         r = handler.results.copy()
+        r.reverse()
         handler.results = []
     else:
         r = [handler.progress]
