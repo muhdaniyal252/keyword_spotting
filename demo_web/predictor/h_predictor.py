@@ -6,8 +6,8 @@ from predictor import Predictor
 # lite_model = r'D:\keyword_spotting\server_models\custom_model_4\trail_2\16k_melspec-nfft-1024_h_cnn_dense_model.tflite'
 # model = r'D:\keyword_spotting\server_models\custom_model_4\trail_2\16k_melspec-nfft-1024_h_cnn_dense_model.keras'
     
-lite_model = "/shareddrive/working/model_code/models/custom_model_4/trail_2/16k_melspec-nfft-1024_h_cnn_dense_model.tflite"
-model = '/shareddrive/working/model_code/models/custom_model_4/trail_2/16k_melspec-nfft-1024_h_cnn_dense_model.keras'
+lite_model = "/shareddrive/working/model_code/models/custom_model_4/trail_4/16k_melspec-nfft-1024_h_cnn_dense_model.tflite"
+model = '/shareddrive/working/model_code/models/custom_model_4/trail_4/16k_melspec-nfft-1024_h_cnn_dense_model.keras'
 
 # lite_model = r"C:\Users\muhammaddaniyal2\Desktop\keyword_spotting\models\h_model.tflite"
 # model = r'C:\Users\muhammaddaniyal2\Desktop\keyword_spotting\models\h_model.keras'

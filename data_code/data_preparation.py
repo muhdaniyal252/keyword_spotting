@@ -198,8 +198,8 @@ def augment(folder):
 
 if __name__ == '__main__':
     
-    main_folder = '/shareddrive/working/data_code/data/hilfe_hilfe'
-    keyword = 'Hilfe_Hilfe'
+    main_folder = '/shareddrive/working/data_code/data/adele'
+    keyword = 'Adele'
     path_to_original = f'{main_folder}/original/'
 
     path_to_trimmed = f'{main_folder}/trimmed/'
