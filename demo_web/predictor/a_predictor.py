@@ -2,11 +2,11 @@ import tensorflow as tf
 import numpy as np
 from predictor import Predictor
 
-lite_model = r'D:\keyword_spotting\server_models\custom_model_4\trail_1\16k_melspec-nfft-1024_a_cnn_dense_model.tflite'
-model = r'D:\keyword_spotting\server_models\custom_model_4\trail_1\16k_melspec-nfft-1024_a_cnn_dense_model.keras'
+# lite_model = r'D:\keyword_spotting\server_models\custom_model_4\trail_5\16k_melspec-nfft-1024_a_cnn_dense_model.tflite'
+# model = r'D:\keyword_spotting\server_models\custom_model_4\trail_5\16k_melspec-nfft-1024_a_cnn_dense_model.keras'
 
-# lite_model = "/shareddrive/working/model_code/models/custom_model_4/trail_3/16k_melspec-nfft-1024_a_cnn_dense_model.tflite"
-# model = '/shareddrive/working/model_code/models/custom_model_4/trail_3/16k_melspec-nfft-1024_a_cnn_dense_model.keras'
+lite_model = "/shareddrive/working/model_code/models/custom_model_4/trail_5/16k_melspec-nfft-1024_a_cnn_dense_model.tflite"
+model = '/shareddrive/working/model_code/models/custom_model_4/trail_5/16k_melspec-nfft-1024_a_cnn_dense_model.keras'
 
 # lite_model = r"C:\Users\muhammaddaniyal2\Desktop\keyword_spotting\models\a_model.tflite"
 # model = r'C:\Users\muhammaddaniyal2\Desktop\keyword_spotting\models\a_model.keras'
