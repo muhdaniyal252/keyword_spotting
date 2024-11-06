@@ -2,9 +2,31 @@ import os
 import shutil
 import random
 
+noise_path = '/shareddrive/working/data_code/data/neg_data/_background_noise_/chunks/1s_chunks/*'
+environment_path = '/shareddrive/working/data_code/data/neg_data/envornment/chunks/1s_chunks/*'
+word_path = '/shareddrive/working/data_code/data/neg_data/spcmd/all_words/original/*'
+# word_path = '/shareddrive/working/data_code/data/neg_data/spcmd/all_words/2-5s_chunks/*'
+recording_path = '/shareddrive/working/data_code/data/neg_data/internet_recordings/chunks/1s_chunks/*'
+aug_recording_path = '/shareddrive/working/data_code/data/neg_data/internet_recordings/chunks/1s_chunks_aug/*'
+
+keyword_files = list() 
+
+avg_files = int(len(keyword_files)/8)
+
+unknown_files = list()
+word_files = glob.glob(word_path)
+environment_files = glob.glob(environment_path)
+noise_files = glob.glob(noise_path)
+recording_files = glob.glob(recording_path)
+aug_recording_files = glob.glob(aug_recording_path)
+
+unknown_files.extend([(i,0) for i in recording_files])
+unknown_files.extend([(i,0) for i in noise_files])
+unknown_files.extend([(i,0) for i in environment_files])
+unknown_files.extend([(i,0) for i in random.sample(word_files,avg_files)])
+unknown_files.extend([(i,0) for i in random.sample(aug_recording_files,int(avg_files*1.8))])
+
 # Lists of file paths
-unknown_files = list(range(1,21))  # Add your unknown file paths here
-keyword_files = list(range(21,41))  # Add your keyword file paths here
 
 # Base directory where folders should be created
 base_dir = r'D:\keyword_spotting\data'  # Replace this with your desired base directory path
