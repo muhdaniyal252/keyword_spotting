@@ -23,7 +23,7 @@ else:
 class SpeechCommandsDataProvider(DataProvider):
 
     def __init__(self, save_path=None, train_batch_size=100, test_batch_size=100, valid_size=None,
-                 n_worker=32, resize_scale=None, distort_color=None, n_mfcc=10):
+                    n_worker=32, resize_scale=None, distort_color=None, n_mfcc=10):
         self._save_path = save_path
         self.n_mfcc = n_mfcc
 
@@ -56,7 +56,7 @@ class SpeechCommandsDataProvider(DataProvider):
     # TODO add silence
     @property
     def n_classes(self):
-        return 12
+        return 2
 
     @property
     def save_path(self):
@@ -171,7 +171,7 @@ class SpeechCommandsFolder(torch.utils.data.Dataset):
         self.extensions = ('.wav',)
         self.sample_rate = 16000
         self.n_mfcc = n_mfcc
-        self.classes = ['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'silence', 'unknown']
+        self.classes = ['adele', 'unknown']
         self.class_to_idx = {self.classes[i]: i for i in range(len(self.classes))}
 
         samples = make_dataset(self.root, self.class_to_idx, self.extensions)
