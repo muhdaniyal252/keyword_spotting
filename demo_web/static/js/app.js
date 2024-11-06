@@ -132,7 +132,7 @@ function populateResult(obj){
     var newItem = document.createElement('tr');
     if (obj['prediction'] == 'adele'){
         newItem.classList.add('table-success');
-    } else if (obj['prediction'] == 'hilfe') {
+    } else if (obj['prediction'] == 'Hilfe-Hilfe') {
         newItem.classList.add('table-info');
     }
 
