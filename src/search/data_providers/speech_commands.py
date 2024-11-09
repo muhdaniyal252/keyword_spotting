@@ -56,12 +56,12 @@ class SpeechCommandsDataProvider(DataProvider):
     # TODO add silence
     @property
     def n_classes(self):
-        return 2
+        return 3
 
     @property
     def save_path(self):
         if self._save_path is None:
-            self._save_path = os.path.join(DATA_PATH, 'speech_commands_v0.01')
+            self._save_path = DATA_PATH
         return self._save_path
 
     @property
@@ -171,7 +171,8 @@ class SpeechCommandsFolder(torch.utils.data.Dataset):
         self.extensions = ('.wav',)
         self.sample_rate = 16000
         self.n_mfcc = n_mfcc
-        self.classes = ['adele', 'unknown']
+        self.required_sample = self.sample_rate * 1 # 2.5
+        self.classes = ['silence', 'unknown','keyword']
         self.class_to_idx = {self.classes[i]: i for i in range(len(self.classes))}
 
         samples = make_dataset(self.root, self.class_to_idx, self.extensions)
@@ -209,6 +210,7 @@ class SpeechCommandsFolder(torch.utils.data.Dataset):
     def loader(self, path):
         if torchaudio_enabled:
             waveform, sample_rate = torchaudio.load(path)
+            waveform = torchaudio.functional.resample(waveform, orig_freq=sample_rate, new_freq=self.sample_rate)
             n_samples = waveform.shape[1]
         else:
             waveform, sample_rate = librosa.load(path, sr=self.sample_rate)
@@ -217,14 +219,15 @@ class SpeechCommandsFolder(torch.utils.data.Dataset):
 
         assert self.sample_rate == sample_rate
 
-        if n_samples == sample_rate:
+        if n_samples == self.required_sample:
             return waveform
-        elif n_samples < sample_rate:
+        elif n_samples < self.required_sample:
             padded_waveform = torch.zeros([1, sample_rate])
             padded_waveform[0, 0:n_samples] = waveform[0]
             return padded_waveform
-        elif n_samples > sample_rate:
-            raise (RuntimeError("File {} has more than {} samples.".format(path, sample_rate)))
+        elif n_samples > self.required_sample:
+            truncated_waveform = waveform[:, :self.required_sample]
+            return truncated_waveform 
 
     def transform(self, sample):
         time_shift_ms = 100

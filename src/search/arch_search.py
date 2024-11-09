@@ -4,6 +4,9 @@
 
 import argparse
 import re
+import sys
+sys.path.append('../../')
+sys.path.append('../')
 
 from models import ImagenetRunConfig, SpeechCommandsRunConfig
 from nas_manager import *
@@ -95,7 +98,7 @@ if __name__ == '__main__':
     torch.cuda.manual_seed_all(args.manual_seed)
     np.random.seed(args.manual_seed)
 
-    os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
+    # os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
 
     os.makedirs(args.path, exist_ok=True)
 
