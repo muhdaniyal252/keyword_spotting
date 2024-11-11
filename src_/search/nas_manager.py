@@ -161,6 +161,7 @@ class ArchSearchRunManager:
 
         self.warmup = True
         self.warmup_epoch = 0
+        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     def _calc_learning_rate(self, epoch, batch=0, nBatch=None):
         T_total = self.run_manager.run_config.n_epochs * nBatch
@@ -274,10 +275,10 @@ class ArchSearchRunManager:
             avg_precision = AverageMeter()
             avg_recall = AverageMeter()
             
-            ignore_index = 3 #silence class to be ignored for calculation of F1Score
-            f1 = F1Score(num_classes=4, ignore_index=ignore_index, average='macro').to(self.device)
-            precision = Precision(num_classes=4, average='macro', ignore_index=ignore_index).to(self.run_manager.device)
-            recall = Recall(num_classes=4, average='macro', ignore_index=ignore_index).to(self.run_manager.device)
+            ignore_index = 0 #silence class to be ignored for calculation of F1Score
+            f1 = F1Score(num_classes=3, task='multiclass', ignore_index=ignore_index, average='macro').to(self.device)
+            precision = Precision(num_classes=3, task='multiclass', average='macro', ignore_index=ignore_index).to(self.run_manager.device)
+            recall = Recall(num_classes=3, task='multiclass', average='macro', ignore_index=ignore_index).to(self.run_manager.device)
 
             # switch to train mode
             self.run_manager.net.train()
@@ -380,13 +381,13 @@ class ArchSearchRunManager:
             data_time = AverageMeter()
             losses = AverageMeter()
             top1 = AverageMeter()
-            ignore_index = 3 #silence class to be ignored for calculation of F1Score
-            f1 = F1Score(num_classes=4, ignore_index=ignore_index, average='macro').to(self.device)
+            ignore_index = 0 #silence class to be ignored for calculation of F1Score
+            f1 = F1Score(num_classes=3, task='multiclass', ignore_index=ignore_index, average='macro').to(self.device)
             f1score = AverageMeter()
             avg_precision = AverageMeter()
             avg_recall = AverageMeter()
-            precision = Precision(num_classes=4, average='macro', ignore_index=ignore_index).to(self.device)
-            recall = Recall(num_classes=4, average='macro', ignore_index=ignore_index).to(self.device)
+            precision = Precision(num_classes=3, task='multiclass', average='macro', ignore_index=ignore_index).to(self.device)
+            recall = Recall(num_classes=3, task='multiclass', average='macro', ignore_index=ignore_index).to(self.device)
             top5 = AverageMeter()
             entropy = AverageMeter()
             # switch to train mode
@@ -470,8 +471,8 @@ class ArchSearchRunManager:
                                 'Entropy {entropy.val:.5f} ({entropy.avg:.5f})\t' \
                                 'Top-1 acc {top1.val:.3f} ({top1.avg:.3f})\t' \
                                 'F1 score {f1score.val:.3f} ({f1score.avg:.3f})\t' \
-                                'Precision score {precision.val:.3f} ({avg_precision.avg:.3f})\t' \
-                                'Recall score {recall.val:.3f} ({avg_recall.avg:.3f})\t' \
+                                'Precision score {avg_precision.val:.4f} ({avg_precision.avg:.4f})\t'\
+                                'Recall score {avg_recall.val:.4f} ({avg_recall.avg:.4f})\t'\
                                 'Top-5 acc {top5.val:.3f} ({top5.avg:.3f})\tlr {lr:.5f}\tarch lr {arch_lr:.5f}'. \
                         format(epoch + 1, i, nBatch - 1, batch_time=batch_time, data_time=data_time,
                                losses=losses, entropy=entropy, top1=top1, top5=top5, f1score=f1score, avg_precision=avg_precision, avg_recall=avg_recall, lr=lr, arch_lr=arch_lr)
@@ -485,15 +486,24 @@ class ArchSearchRunManager:
 
             # validate
             if (epoch + 1) % self.run_manager.run_config.validation_frequency == 0:
-                (val_loss, val_top1, val_f1score, val_precision, val_recall), flops, latency = self.validate()
+                val_loss, val_top1, val_f1score, val_precision, val_recall, flops, latency = self.validate()
                 self.run_manager.best_acc = max(self.run_manager.best_acc, val_top1)
-                val_log = 'Valid [{0}/{1}]\tloss {2:.3f}\ttop-1 acc {3:.3f} ({4:.3f})\tf1 score {5:.3f}\tprecision score {5:.3f}\trecall score {5:.3f}\t' \
-                          'Train top-1 {top1.avg:.3f}\ttop-5 {top5.avg:.3f}\ttf1 score {f1score.avg:.3f}\tprecision score {avg_precision.avg:.3f}\trecall score {avg_recall.avg:.3f}' \
-                          'Entropy {entropy.val:.5f}\t' \
-                          'Latency-{6}: {7:.3f}ms\tFlops: {8:.3f}k'. \
-                    format(epoch + 1, self.run_manager.run_config.n_epochs, val_loss, val_top1, val_precision, val_recall,
-                           self.run_manager.best_acc, val_f1score, self.arch_search_config.target_hardware,
-                           latency, flops / 1e3, entropy=entropy, top1=top1, top5=top5, f1score=f1score, avg_precision=avg_precision, avg_recall=avg_recall)
+                val_log = (
+                    f"Valid [{epoch + 1}/{self.run_manager.run_config.n_epochs}]\t"
+                    f"loss {val_loss:.3f}\t"
+                    f"top-1 acc {val_top1:.3f} ({self.run_manager.best_acc:.3f})\t"
+                    f"f1 score {val_f1score:.3f}\t"
+                    f"precision score {val_precision:.3f}\t"
+                    f"recall score {val_recall:.3f}\t"
+                    f"Train top-1 {top1.avg:.3f}\t"
+                    f"top-5 {top5.avg:.3f}\t"
+                    f"tf1 score {f1score.avg:.3f}\t"
+                    f"precision score {avg_precision.avg:.3f}\t"
+                    f"recall score {avg_recall.avg:.3f}\t"
+                    f"Entropy {entropy.val:.5f}\t"
+                    f"Latency-{self.arch_search_config.target_hardware}: {latency:.3f}ms\t"
+                    f"Flops: {flops / 1e3:.3f}k"
+                )                
                 self.run_manager.write_log(val_log, 'valid')
             # save model
             self.run_manager.save_model({

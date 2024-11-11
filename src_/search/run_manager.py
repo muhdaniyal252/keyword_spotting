@@ -199,7 +199,7 @@ class RunManager:
 
         # net info
         self.print_net_info(measure_latency)
-        self.weights = torch.Tensor([5.0, 5.0, 2.0, 1.0]).to(self.device)
+        self.weights = torch.Tensor([1.0, 2.0, 5.0]).to(self.device)
         self.criterion = nn.CrossEntropyLoss(weight=self.weights)
         if self.run_config.no_decay_keys:
             keys = self.run_config.no_decay_keys.split('#')
@@ -500,13 +500,13 @@ class RunManager:
         avg_precision = AverageMeter()
         avg_recall = AverageMeter()
 
-        confusion_matrix = torch.zeros(4, 4)
+        confusion_matrix = torch.zeros(3,3)
 
         end = time.time()
-        ignore_index = 3 #silence class to be ignored for calculation of F1Score
-        f1 = F1Score(num_classes=4, ignore_index=ignore_index, average='macro').to(self.device)
-        precision = Precision(num_classes=4, average="macro", ignore_index=ignore_index).to(self.device)
-        recall = Recall(num_classes=4, average="macro", ignore_index=ignore_index).to(self.device)
+        ignore_index = 0 #silence class to be ignored for calculation of F1Score
+        f1 = F1Score(num_classes=3, task='multiclass', ignore_index=ignore_index, average='macro').to(self.device)
+        precision = Precision(num_classes=3, task='multiclass', average="macro", ignore_index=ignore_index).to(self.device)
+        recall = Recall(num_classes=3, task='multiclass', average="macro", ignore_index=ignore_index).to(self.device)
         # noinspection PyUnresolvedReferences
         with torch.no_grad():
             for i, (images, labels) in enumerate(data_loader):
@@ -560,7 +560,7 @@ class RunManager:
                     print(test_log)
         print("Confusion matrix:")
         print(confusion_matrix.numpy())
-        classes = ['Adele', 'Hilfe Hilfe', 'unknown', 'silence']  # See SpeechCommandsFolder class
+        classes = ['silence', 'unknown','keyword']  # See SpeechCommandsFolder class
         class_acc = ""
         for c, a in zip(classes, class_accuracy.tolist()):
             class_acc += "\t{0}: {1:.2f} %\n".format(c, a)
@@ -574,9 +574,9 @@ class RunManager:
         # #     json.dump(data_dict, json_file)
 
         if return_top5:
-            return losses.avg, top1.avg, top5.avg
-        else:
             return losses.avg, top1.avg, f1score.avg, avg_precision.avg, avg_recall.avg
+        else:
+            return losses.avg, top1.avg, top5.avg
         
 
     def train_one_epoch(self, adjust_lr_func, train_log_func):
@@ -593,10 +593,10 @@ class RunManager:
         self.net.train()
 
         end = time.time()
-        ignore_index = 3 #silence class to be ignored for calculation of F1Score
-        f1 = F1Score(num_classes=4, ignore_index=ignore_index, average='macro').to(self.device)
-        precision = Precision(num_classes=4, average='macro', ignore_index=ignore_index).to(self.device)
-        recall = Recall(num_classes=4, average='macro', ignore_index=ignore_index).to(self.device)
+        ignore_index = 0 #silence class to be ignored for calculation of F1Score
+        f1 = F1Score(num_classes=3, task='multiclass', ignore_index=ignore_index, average='macro').to(self.device)
+        precision = Precision(num_classes=3, task='multiclass', average='macro', ignore_index=ignore_index).to(self.device)
+        recall = Recall(num_classes=3, task='multiclass', average='macro', ignore_index=ignore_index).to(self.device)
 
         for i, (images, labels) in enumerate(self.run_config.train_loader):
             data_time.update(time.time() - end)
@@ -681,12 +681,7 @@ class RunManager:
                 self.best_recall = max(self.best_recall, val_recall)
                 val_log = 'Valid [{0}/{1}]\tloss {2:.3f}\ttop-1 acc {3:.3f}\tF1 score {4:.3f} ({5:.3f})\tPrecision score {6:.3f} ({7:.3f})\tRecall score {8:.3f} ({9:.3f})'.\
                 format(epoch + 1, self.run_config.n_epochs, val_loss, val_acc, val_f1, self.best_f1, val_precision, self.best_precision, val_recall, self.best_recall)
-                if print_top5:
-                    val_log += '\ttop-5 acc {0:.3f}\tTrain top-1 {top1.avg:.3f}\ttop-5 {top5.avg:.3f}'.\
-                        format(val_acc5, top1=train_top1, top5=train_top5)
-                else:
-                    #val_log += '\tTrain top-1 {top1.avg:.3f}'.format(top1=train_top1)
-                    val_log += '\tTrain f1 score {0:.3f}\tTrain Precision score {1:.3f}\tTrain Recall score {2:.3f}'.format(train_f1, train_precision, train_recall)
+                val_log += '\tTrain f1 score {0:.3f}\tTrain Precision score {1:.3f}\tTrain Recall score {2:.3f}'.format(train_f1, train_precision, train_recall)
                 self.write_log(val_log, 'valid')
             else:
                 is_best = False

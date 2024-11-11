@@ -478,7 +478,7 @@ class RunManager:
         top1 = AverageMeter()
         top5 = AverageMeter()
 
-        confusion_matrix = torch.zeros(12, 12)
+        confusion_matrix = torch.zeros(3,3)
 
         end = time.time()
         # noinspection PyUnresolvedReferences
@@ -518,7 +518,7 @@ class RunManager:
                     print(test_log)
         print("Confusion matrix:")
         print(confusion_matrix.numpy())
-        classes = ['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'silence', 'unknown']  # See SpeechCommandsFolder class
+        classes = ['silence', 'unknown','keyword']  # See SpeechCommandsFolder class
         class_acc = ""
         for c, a in zip(classes, class_accuracy.tolist()):
             class_acc += "\t{0}: {1:.2f} %\n".format(c, a)

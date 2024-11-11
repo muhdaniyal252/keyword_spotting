@@ -68,7 +68,7 @@ class SpeechCommandsDataProvider(DataProvider):
     # TODO add silence
     @property
     def n_classes(self):
-        return 4
+        return 3
 
     @property
     def save_path(self):
@@ -185,7 +185,7 @@ class SpeechCommandsFolder(torch.utils.data.Dataset):
         self.extensions = ('.wav',)
         self.sample_rate = 44100
         self.n_mfcc = n_mfcc
-        self.classes = ['Adele', 'Hilfe Hilfe', 'unknown', 'silence']
+        self.classes = ['silence', 'unknown','keyword']
         self.class_to_idx = {self.classes[i]: i for i in range(len(self.classes))}
 
         samples = make_dataset(self.root, self.class_to_idx, self.extensions)
