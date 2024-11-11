@@ -178,6 +178,7 @@ class ArchSearchRunManager:
     @property
     def net(self):
         return self.run_manager.net.module
+        #return self.run_manager.net
 
     def write_log(self, log_str, prefix, should_print=True, end='\n'):
         with open(os.path.join(self.run_manager.logs_path, '%s.log' % prefix), 'a') as fout:
@@ -240,8 +241,9 @@ class ArchSearchRunManager:
         self.net.set_chosen_op_active()
         # remove unused modules
         self.net.unused_modules_off()
+
         # test on validation set under train mode
-        valid_res = self.run_manager.validate(is_test=False, use_train_mode=True, return_top5=True)
+        loss_val, top1_val, f1_val, precision_val, recall_val = self.run_manager.validate(is_test=False, use_train_mode=True, return_top5=True)
         # flops of chosen network
         flops = self.run_manager.net_flops()
         # measure latencies of chosen op
@@ -253,7 +255,7 @@ class ArchSearchRunManager:
             )
         # unused modules back
         self.net.unused_modules_back()
-        return valid_res, flops, latency
+        return loss_val, top1_val, f1_val, precision_val, recall_val, flops, latency
 
     def warm_up(self, warmup_epochs=25):
         lr_max = 0.05
@@ -268,6 +270,15 @@ class ArchSearchRunManager:
             losses = AverageMeter()
             top1 = AverageMeter()
             top5 = AverageMeter()
+            f1score = AverageMeter()
+            avg_precision = AverageMeter()
+            avg_recall = AverageMeter()
+            
+            ignore_index = 3 #silence class to be ignored for calculation of F1Score
+            f1 = F1Score(num_classes=4, ignore_index=ignore_index, average='macro').to(self.device)
+            precision = Precision(num_classes=4, average='macro', ignore_index=ignore_index).to(self.run_manager.device)
+            recall = Recall(num_classes=4, average='macro', ignore_index=ignore_index).to(self.run_manager.device)
+
             # switch to train mode
             self.run_manager.net.train()
 
@@ -293,6 +304,12 @@ class ArchSearchRunManager:
                     loss = self.run_manager.criterion(output, labels)
                 # measure accuracy and record loss
                 acc1, acc5 = accuracy(output, labels, topk=(1, 2))
+                f1_score = f1(output, labels)
+                curr_precision = precision(output, labels)
+                curr_recall = recall(output, labels)
+                f1score.update(f1_score, images.size(0))
+                avg_precision.update(curr_precision, images.size(0))
+                avg_recall.update(curr_recall, images.size(0))
                 losses.update(loss, images.size(0))
                 top1.update(acc1[0], images.size(0))
                 top5.update(acc5[0], images.size(0))
@@ -312,14 +329,17 @@ class ArchSearchRunManager:
                                 'Data {data_time.val:.3f} ({data_time.avg:.3f})\t' \
                                 'Loss {losses.val:.4f} ({losses.avg:.4f})\t' \
                                 'Top-1 acc {top1.val:.3f} ({top1.avg:.3f})\t' \
+                                'F1 score {f1score.val:.3f} ({f1score.avg:.3f})\t' \
+                                'Precision score {avg_precision.val:.3f} ({avg_precision.avg:.3f})\t' \
+                                'Recall score {avg_recall.val:.3f} ({avg_recall.avg:.3f})\t' \
                                 'Top-5 acc {top5.val:.3f} ({top5.avg:.3f})\tlr {lr:.5f}'. \
                         format(epoch + 1, i, nBatch - 1, batch_time=batch_time, data_time=data_time,
-                               losses=losses, top1=top1, top5=top5, lr=warmup_lr)
+                               losses=losses, top1=top1, top5=top5, f1score=f1score, avg_precision=avg_precision, avg_recall=avg_recall, lr=warmup_lr)
                     self.run_manager.write_log(batch_log, 'train')
-            valid_res, flops, latency = self.validate()
-            val_log = 'Warmup Valid [{0}/{1}]\tloss {2:.3f}\ttop-1 acc {3:.3f}\ttop-5 acc {4:.3f}\t' \
-                      'Train top-1 {top1.avg:.3f}\ttop-5 {top5.avg:.3f}\tflops: {5:.3f}k'. \
-                format(epoch + 1, warmup_epochs, *valid_res, flops / 1e3, top1=top1, top5=top5)
+            loss_val, top1_val, f1_val, precision_val, recall_val, flops, latency = self.validate()
+            val_log = 'Warmup Valid [{0}/{1}]\tloss {2:.3f}\ttop-1 acc {3:.3f}\tf1 score {4:.3f}\tprecision score {5:.3f}\trecall score {6:.3f}\t' \
+                      'Train top-1 {top1.avg:.3f}\tf1 score {f1score.avg:.3f}\tprecision score {avg_precision.avg:.3f}\trecall score {avg_recall.avg:.3f}\tflops: {flops:.3f}k'. \
+                format(epoch + 1, warmup_epochs, loss_val, top1_val, f1_val, precision_val, recall_val, top1=top1, f1score=f1score, avg_precision=avg_precision, avg_recall=avg_recall, flops=flops / 1e3)
             if self.arch_search_config.target_hardware not in [None, 'flops']:
                 val_log += '\t' + self.arch_search_config.target_hardware + ': %.3fms' % latency
             self.run_manager.write_log(val_log, 'valid')
@@ -360,6 +380,13 @@ class ArchSearchRunManager:
             data_time = AverageMeter()
             losses = AverageMeter()
             top1 = AverageMeter()
+            ignore_index = 3 #silence class to be ignored for calculation of F1Score
+            f1 = F1Score(num_classes=4, ignore_index=ignore_index, average='macro').to(self.device)
+            f1score = AverageMeter()
+            avg_precision = AverageMeter()
+            avg_recall = AverageMeter()
+            precision = Precision(num_classes=4, average='macro', ignore_index=ignore_index).to(self.device)
+            recall = Recall(num_classes=4, average='macro', ignore_index=ignore_index).to(self.device)
             top5 = AverageMeter()
             entropy = AverageMeter()
             # switch to train mode
@@ -395,6 +422,12 @@ class ArchSearchRunManager:
                         loss = self.run_manager.criterion(output, labels)
                     # measure accuracy and record loss
                     acc1, acc5 = accuracy(output, labels, topk=(1, 2))
+                    f1_score = f1(output, labels)
+                    curr_precision = precision(output, labels)
+                    curr_recall = recall(output, labels)
+                    f1score.update(f1_score, images.size(0))
+                    avg_precision.update(curr_precision, images.size(0))
+                    avg_recall.update(curr_recall, images.size(0))
                     losses.update(loss, images.size(0))
                     top1.update(acc1[0], images.size(0))
                     top5.update(acc5[0], images.size(0))
@@ -436,9 +469,12 @@ class ArchSearchRunManager:
                                 'Loss {losses.val:.4f} ({losses.avg:.4f})\t' \
                                 'Entropy {entropy.val:.5f} ({entropy.avg:.5f})\t' \
                                 'Top-1 acc {top1.val:.3f} ({top1.avg:.3f})\t' \
+                                'F1 score {f1score.val:.3f} ({f1score.avg:.3f})\t' \
+                                'Precision score {precision.val:.3f} ({avg_precision.avg:.3f})\t' \
+                                'Recall score {recall.val:.3f} ({avg_recall.avg:.3f})\t' \
                                 'Top-5 acc {top5.val:.3f} ({top5.avg:.3f})\tlr {lr:.5f}\tarch lr {arch_lr:.5f}'. \
                         format(epoch + 1, i, nBatch - 1, batch_time=batch_time, data_time=data_time,
-                               losses=losses, entropy=entropy, top1=top1, top5=top5, lr=lr, arch_lr=arch_lr)
+                               losses=losses, entropy=entropy, top1=top1, top5=top5, f1score=f1score, avg_precision=avg_precision, avg_recall=avg_recall, lr=lr, arch_lr=arch_lr)
                     self.run_manager.write_log(batch_log, 'train')
 
             # print current network architecture
@@ -449,15 +485,15 @@ class ArchSearchRunManager:
 
             # validate
             if (epoch + 1) % self.run_manager.run_config.validation_frequency == 0:
-                (val_loss, val_top1, val_top5), flops, latency = self.validate()
+                (val_loss, val_top1, val_f1score, val_precision, val_recall), flops, latency = self.validate()
                 self.run_manager.best_acc = max(self.run_manager.best_acc, val_top1)
-                val_log = 'Valid [{0}/{1}]\tloss {2:.3f}\ttop-1 acc {3:.3f} ({4:.3f})\ttop-5 acc {5:.3f}\t' \
-                          'Train top-1 {top1.avg:.3f}\ttop-5 {top5.avg:.3f}\t' \
+                val_log = 'Valid [{0}/{1}]\tloss {2:.3f}\ttop-1 acc {3:.3f} ({4:.3f})\tf1 score {5:.3f}\tprecision score {5:.3f}\trecall score {5:.3f}\t' \
+                          'Train top-1 {top1.avg:.3f}\ttop-5 {top5.avg:.3f}\ttf1 score {f1score.avg:.3f}\tprecision score {avg_precision.avg:.3f}\trecall score {avg_recall.avg:.3f}' \
                           'Entropy {entropy.val:.5f}\t' \
                           'Latency-{6}: {7:.3f}ms\tFlops: {8:.3f}k'. \
-                    format(epoch + 1, self.run_manager.run_config.n_epochs, val_loss, val_top1,
-                           self.run_manager.best_acc, val_top5, self.arch_search_config.target_hardware,
-                           latency, flops / 1e3, entropy=entropy, top1=top1, top5=top5)
+                    format(epoch + 1, self.run_manager.run_config.n_epochs, val_loss, val_top1, val_precision, val_recall,
+                           self.run_manager.best_acc, val_f1score, self.arch_search_config.target_hardware,
+                           latency, flops / 1e3, entropy=entropy, top1=top1, top5=top5, f1score=f1score, avg_precision=avg_precision, avg_recall=avg_recall)
                 self.run_manager.write_log(val_log, 'valid')
             # save model
             self.run_manager.save_model({

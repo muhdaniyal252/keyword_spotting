@@ -11,7 +11,7 @@ import copy
 import torch.nn.parallel
 import torch.backends.cudnn as cudnn
 import torch.optim
-
+from torchmetrics import F1Score, Precision, Recall
 from utils import *
 from models.normal_nets.proxyless_nets import ProxylessNASNets
 from modules.mix_op import MixedEdge
@@ -90,6 +90,7 @@ class RunConfig:
                 self._data_provider = ImagenetDataProvider(**self.data_config)
             elif self.dataset == 'speech_commands':
                 from data_providers.speech_commands import SpeechCommandsDataProvider
+                print('data_config: ', self.data_config)
                 self._data_provider = SpeechCommandsDataProvider(**self.data_config)
             else:
                 raise ValueError('do not support: %s' % self.dataset)
@@ -173,6 +174,9 @@ class RunManager:
 
         self._logs_path, self._save_path = None, None
         self.best_acc = 0
+        self.best_f1 = 0
+        self.best_precision = 0
+        self.best_recall = 0
         self.start_epoch = 0
 
         # initialize model (default)
@@ -195,16 +199,20 @@ class RunManager:
 
         # net info
         self.print_net_info(measure_latency)
-
-        self.criterion = nn.CrossEntropyLoss()
+        self.weights = torch.Tensor([5.0, 5.0, 2.0, 1.0]).to(self.device)
+        self.criterion = nn.CrossEntropyLoss(weight=self.weights)
         if self.run_config.no_decay_keys:
             keys = self.run_config.no_decay_keys.split('#')
             self.optimizer = self.run_config.build_optimizer([
                 self.net.module.get_parameters(keys, mode='exclude'),  # parameters with weight decay
                 self.net.module.get_parameters(keys, mode='include'),  # parameters without weight decay
+                #self.net.get_parameters(keys, mode='exclude'),  # parameters with weight decay
+                #self.net.get_parameters(keys, mode='include'),  # parameters without weight decay
             ])
         else:
-            self.optimizer = self.run_config.build_optimizer(self.net.module.weight_parameters())
+             self.optimizer = self.run_config.build_optimizer(self.net.module.weight_parameters())
+             #if not using dataparallel
+             #self.optimizer = self.run_config.build_optimizer(self.net.weight_parameters())
 
     """ save path and log path """
 
@@ -252,6 +260,8 @@ class RunManager:
             net = given_net
         else:
             net = self.net.module
+            #if not using dataparallel
+            #net = self.net
 
         if l_type == 'mobile':
             predicted_latency = 0
@@ -374,6 +384,7 @@ class RunManager:
     def save_model(self, checkpoint=None, is_best=False, model_name=None):
         if checkpoint is None:
             checkpoint = {'state_dict': self.net.module.state_dict()}
+            #checkpoint = {'state_dict': self.net.state_dict()}
 
         if model_name is None:
             model_name = 'checkpoint.pth.tar'
@@ -411,6 +422,7 @@ class RunManager:
                 checkpoint = torch.load(model_fname, map_location='cpu')
 
             self.net.module.load_state_dict(checkpoint['state_dict'])
+            #self.net.load_state_dict(checkpoint['state_dict'])
             # set new manual seed
             new_manual_seed = int(time.time())
             torch.manual_seed(new_manual_seed)
@@ -421,6 +433,12 @@ class RunManager:
                 self.start_epoch = checkpoint['epoch'] + 1
             if 'best_acc' in checkpoint:
                 self.best_acc = checkpoint['best_acc']
+            if 'best_f1' in checkpoint:
+                self.best_f1 = checkpoint['best_f1']
+            if 'best_precision' in checkpoint:
+                self.best_precision = checkpoint['best_precision']
+            if 'best_recall' in checkpoint:
+                self.best_recall = checkpoint['best_recall']
             if 'optimizer' in checkpoint:
                 self.optimizer.load_state_dict(checkpoint['optimizer'])
 
@@ -435,6 +453,7 @@ class RunManager:
         os.makedirs(self.path, exist_ok=True)
         net_save_path = os.path.join(self.path, 'net.config')
         json.dump(self.net.module.config, open(net_save_path, 'w'), indent=4)
+        #json.dump(self.net.config, open(net_save_path, 'w'), indent=4)
         if print_info:
             print('Network configs dump to %s' % net_save_path)
 
@@ -477,10 +496,17 @@ class RunManager:
         losses = AverageMeter()
         top1 = AverageMeter()
         top5 = AverageMeter()
+        f1score = AverageMeter()
+        avg_precision = AverageMeter()
+        avg_recall = AverageMeter()
 
-        confusion_matrix = torch.zeros(12, 12)
+        confusion_matrix = torch.zeros(4, 4)
 
         end = time.time()
+        ignore_index = 3 #silence class to be ignored for calculation of F1Score
+        f1 = F1Score(num_classes=4, ignore_index=ignore_index, average='macro').to(self.device)
+        precision = Precision(num_classes=4, average="macro", ignore_index=ignore_index).to(self.device)
+        recall = Recall(num_classes=4, average="macro", ignore_index=ignore_index).to(self.device)
         # noinspection PyUnresolvedReferences
         with torch.no_grad():
             for i, (images, labels) in enumerate(data_loader):
@@ -491,6 +517,12 @@ class RunManager:
                 loss = self.criterion(output, labels)
                 # measure accuracy and record loss
                 acc1, acc5 = accuracy(output, labels, topk=(1, 2))
+                f1_score = f1(output, labels)
+                curr_precision = precision(output, labels)
+                curr_recall = recall(output, labels)
+                avg_precision.update(curr_precision, images.size(0))
+                avg_recall.update(curr_recall, images.size(0))
+                f1score.update(f1_score, images.size(0))
                 losses.update(loss, images.size(0))
                 top1.update(acc1[0], images.size(0))
                 top5.update(acc5[0], images.size(0))
@@ -502,6 +534,13 @@ class RunManager:
                 # measure elapsed time
                 batch_time.update(time.time() - end)
                 end = time.time()
+                # Find incorrect predictions and print their paths
+                # incorrect_indices = (preds != labels)
+                # print(len(incorrect_indices))
+                # for i in incorrect_indices:
+                #     print("Path: %s" % data_loader.dataset.path_list[i])
+                #     print("Prediction: %s" % preds[i])
+                #     print("Actual Label: %s" % labels[i])
 
                 if i % self.run_config.print_frequency == 0 or i + 1 == len(data_loader):
                     if is_test:
@@ -511,23 +550,34 @@ class RunManager:
                     test_log = prefix + ': [{0}/{1}]\t'\
                                         'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'\
                                         'Loss {loss.val:.4f} ({loss.avg:.4f})\t'\
-                                        'Top-1 acc {top1.val:.3f} ({top1.avg:.3f})'.\
-                        format(i, len(data_loader) - 1, batch_time=batch_time, loss=losses, top1=top1)
+                                        'Top-1 acc {top1.val:.3f} ({top1.avg:.3f})'\
+                                        'F1 score {f1score.val:.3f} ({f1score.avg:.3f})'\
+                                        'Precision score {avg_precision.val:.3f} ({avg_precision.avg:.3f})'\
+                                        'Recall score {avg_recall.val:.3f} ({avg_recall.avg:.3f})'.\
+                        format(i, len(data_loader) - 1, batch_time=batch_time, loss=losses, top1=top1, f1score=f1score, avg_precision=avg_precision, avg_recall=avg_recall)
                     if return_top5:
                         test_log += '\tTop-5 acc {top5.val:.3f} ({top5.avg:.3f})'.format(top5=top5)
                     print(test_log)
         print("Confusion matrix:")
         print(confusion_matrix.numpy())
-        classes = ['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'silence', 'unknown']  # See SpeechCommandsFolder class
+        classes = ['Adele', 'Hilfe Hilfe', 'unknown', 'silence']  # See SpeechCommandsFolder class
         class_acc = ""
         for c, a in zip(classes, class_accuracy.tolist()):
             class_acc += "\t{0}: {1:.2f} %\n".format(c, a)
         class_acc = class_acc[:-1]
-        print("Class accuracies:\n" + class_acc)
+        # print("Class accuracies:\n" + class_acc)
+        # paths = data_loader.dataset.path_list
+        # samples = data_loader.dataset.sample_list
+        # # print(paths)
+        # # data_dict = {'paths': paths, 'samples': samples}
+        # # with open("/home/majam001/kws/alpha-kws/models/model_4/learned_net/data_dict.json", 'w') as json_file:
+        # #     json.dump(data_dict, json_file)
+
         if return_top5:
             return losses.avg, top1.avg, top5.avg
         else:
-            return losses.avg, top1.avg
+            return losses.avg, top1.avg, f1score.avg, avg_precision.avg, avg_recall.avg
+        
 
     def train_one_epoch(self, adjust_lr_func, train_log_func):
         batch_time = AverageMeter()
@@ -535,18 +585,25 @@ class RunManager:
         losses = AverageMeter()
         top1 = AverageMeter()
         top5 = AverageMeter()
+        f1score = AverageMeter()
+        avg_precision = AverageMeter()
+        avg_recall = AverageMeter()
 
         # switch to train mode
         self.net.train()
 
         end = time.time()
+        ignore_index = 3 #silence class to be ignored for calculation of F1Score
+        f1 = F1Score(num_classes=4, ignore_index=ignore_index, average='macro').to(self.device)
+        precision = Precision(num_classes=4, average='macro', ignore_index=ignore_index).to(self.device)
+        recall = Recall(num_classes=4, average='macro', ignore_index=ignore_index).to(self.device)
+
         for i, (images, labels) in enumerate(self.run_config.train_loader):
             data_time.update(time.time() - end)
             new_lr = adjust_lr_func(i)
             images, labels = images.to(self.device), labels.to(self.device)
-
             # compute output
-            output = self.net(images)
+            output = self.net(images.to(self.device))
             if self.run_config.label_smoothing > 0:
                 loss = cross_entropy_with_label_smoothing(output, labels, self.run_config.label_smoothing)
             else:
@@ -554,6 +611,12 @@ class RunManager:
 
             # measure accuracy and record loss
             acc1, acc5 = accuracy(output, labels, topk=(1, 2))
+            f1_score = f1(output, labels)
+            curr_precision = precision(output,labels)
+            curr_recall = recall(output,labels)
+            avg_precision.update(curr_precision, images.size(0))
+            avg_recall.update(curr_recall, images.size(0))
+            f1score.update(f1_score, images.size(0))
             losses.update(loss, images.size(0))
             top1.update(acc1[0], images.size(0))
             top5.update(acc5[0], images.size(0))
@@ -568,21 +631,24 @@ class RunManager:
             end = time.time()
 
             if i % self.run_config.print_frequency == 0 or i + 1 == len(self.run_config.train_loader):
-                batch_log = train_log_func(i, batch_time, data_time, losses, top1, top5, new_lr)
+                batch_log = train_log_func(i, batch_time, data_time, losses, top1, top5, f1score, avg_precision, avg_recall, new_lr)
                 self.write_log(batch_log, 'train')
-        return top1, top5
+        return top1.avg, top5.avg, f1score.avg, avg_precision.avg, avg_recall.avg
 
     def train(self, print_top5=False):
         nBatch = len(self.run_config.train_loader)
 
-        def train_log_func(epoch_, i, batch_time, data_time, losses, top1, top5, lr):
+        def train_log_func(epoch_, i, batch_time, data_time, losses, top1, top5, f1score, avg_precision, avg_recall, lr):
             batch_log = 'Train [{0}][{1}/{2}]\t' \
                         'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t' \
                         'Data {data_time.val:.3f} ({data_time.avg:.3f})\t' \
                         'Loss {losses.val:.4f} ({losses.avg:.4f})\t' \
-                        'Top-1 acc {top1.val:.3f} ({top1.avg:.3f})'. \
+                        'Top-1 acc {top1.val:.3f} ({top1.avg:.3f})' \
+                        'F1 score {f1score.val:.4f} ({f1score.avg:.4f})\t'\
+                        'Precision score {avg_precision.val:.4f} ({avg_precision.avg:.4f})\t'\
+                        'Recall score {avg_recall.val:.4f} ({avg_recall.avg:.4f})\t'.\
                 format(epoch_ + 1, i, nBatch - 1,
-                       batch_time=batch_time, data_time=data_time, losses=losses, top1=top1)
+                       batch_time=batch_time, data_time=data_time, losses=losses, top1=top1, f1score=f1score, avg_precision=avg_precision, avg_recall=avg_recall)
             if print_top5:
                 batch_log += '\tTop-5 acc {top5.val:.3f} ({top5.avg:.3f})'.format(top5=top5)
             batch_log += '\tlr {lr:.5f}'.format(lr=lr)
@@ -592,10 +658,10 @@ class RunManager:
             print('\n', '-' * 30, 'Train epoch: %d' % (epoch + 1), '-' * 30, '\n')
 
             end = time.time()
-            train_top1, train_top5 = self.train_one_epoch(
+            train_top1, train_top5, train_f1, train_precision, train_recall = self.train_one_epoch(
                 lambda i: self.run_config.adjust_learning_rate(self.optimizer, epoch, i, nBatch),
-                lambda i, batch_time, data_time, losses, top1, top5, new_lr:
-                train_log_func(epoch, i, batch_time, data_time, losses, top1, top5, new_lr),
+                lambda i, batch_time, data_time, losses, top1, top5, f1score, avg_precision, avg_recall, new_lr:
+                train_log_func(epoch, i, batch_time, data_time, losses, top1, top5, f1score, avg_precision, avg_recall, new_lr),
             )
             time_per_epoch = time.time() - end
             seconds_left = int((self.run_config.n_epochs - epoch - 1) * time_per_epoch)
@@ -604,16 +670,23 @@ class RunManager:
                 str(timedelta(seconds=seconds_left))))
 
             if (epoch + 1) % self.run_config.validation_frequency == 0:
-                val_loss, val_acc, val_acc5 = self.validate(is_test=False, return_top5=True)
-                is_best = val_acc > self.best_acc
+                val_loss, val_acc, val_f1, val_precision, val_recall = self.validate(is_test=False, return_top5=False)
+                is_best_acc = val_acc > self.best_acc
+                is_best_f1 = val_f1 > self.best_f1
+                is_best_precision = val_precision > self.best_precision
+                is_best_recall = val_recall > self.best_recall
                 self.best_acc = max(self.best_acc, val_acc)
-                val_log = 'Valid [{0}/{1}]\tloss {2:.3f}\ttop-1 acc {3:.3f} ({4:.3f})'.\
-                    format(epoch + 1, self.run_config.n_epochs, val_loss, val_acc, self.best_acc)
+                self.best_f1 = max(self.best_f1, val_f1)
+                self.best_precision = max(self.best_precision, val_precision)
+                self.best_recall = max(self.best_recall, val_recall)
+                val_log = 'Valid [{0}/{1}]\tloss {2:.3f}\ttop-1 acc {3:.3f}\tF1 score {4:.3f} ({5:.3f})\tPrecision score {6:.3f} ({7:.3f})\tRecall score {8:.3f} ({9:.3f})'.\
+                format(epoch + 1, self.run_config.n_epochs, val_loss, val_acc, val_f1, self.best_f1, val_precision, self.best_precision, val_recall, self.best_recall)
                 if print_top5:
                     val_log += '\ttop-5 acc {0:.3f}\tTrain top-1 {top1.avg:.3f}\ttop-5 {top5.avg:.3f}'.\
                         format(val_acc5, top1=train_top1, top5=train_top5)
                 else:
-                    val_log += '\tTrain top-1 {top1.avg:.3f}'.format(top1=train_top1)
+                    #val_log += '\tTrain top-1 {top1.avg:.3f}'.format(top1=train_top1)
+                    val_log += '\tTrain f1 score {0:.3f}\tTrain Precision score {1:.3f}\tTrain Recall score {2:.3f}'.format(train_f1, train_precision, train_recall)
                 self.write_log(val_log, 'valid')
             else:
                 is_best = False
@@ -621,6 +694,10 @@ class RunManager:
             self.save_model({
                 'epoch': epoch,
                 'best_acc': self.best_acc,
+                'best_f1':self.best_f1,
+                'best_precision':self.best_precision,
+                'best_recall':self.best_recall,
                 'optimizer': self.optimizer.state_dict(),
                 'state_dict': self.net.module.state_dict(),
-            }, is_best=is_best)
+                #'state_dict': self.net.state_dict(),
+            }, is_best=is_best_f1)

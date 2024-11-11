@@ -8,12 +8,14 @@ import os.path
 import random
 import numpy as np
 import importlib
+import json
 
 from data_providers.base_provider import *
 
 from definitions import DATA_PATH
 
 torchaudio_enabled = True if importlib.util.find_spec('torchaudio') else False
+torchaudio_enabled = False
 if torchaudio_enabled:
     import torchaudio
 else:
@@ -23,14 +25,14 @@ else:
 class SpeechCommandsDataProvider(DataProvider):
 
     def __init__(self, save_path=None, train_batch_size=100, test_batch_size=100, valid_size=None,
-                    n_worker=32, resize_scale=None, distort_color=None, n_mfcc=10):
+                 n_worker=32, resize_scale=None, distort_color=None, n_mfcc=10):
         self._save_path = save_path
         self.n_mfcc = n_mfcc
 
         train_dataset = SpeechCommandsFolder(os.path.join(self.save_path, 'training'), augment=True, n_mfcc=self.n_mfcc)
         validation_dataset = SpeechCommandsFolder(os.path.join(self.save_path, 'validation'), augment=False, n_mfcc=self.n_mfcc)
         test_dataset = SpeechCommandsFolder(os.path.join(self.save_path, 'testing'), augment=False, n_mfcc=self.n_mfcc)
-
+        
         self.train = torch.utils.data.DataLoader(
             train_dataset, batch_size=train_batch_size,
             num_workers=n_worker, pin_memory=True, shuffle=True
@@ -44,6 +46,16 @@ class SpeechCommandsDataProvider(DataProvider):
             num_workers=n_worker, pin_memory=True,
         )
 
+        # for sample, target in enumerate(test_dataset):
+        #     #print(sample, target)
+        #     continue
+        # data_list = []
+        # data_dict = {'paths': test_dataset.path_list, 'samples': test_dataset.sample_list}
+        # for path, sample in zip(data_dict['paths'], data_dict['samples']):
+        #     data_list.append({"path": path, "sample": sample})
+        # with open("/home/majam001/kws/alpha-kws/models/model_5/learned_net/data_dict.json", 'w') as json_file:
+        #     json.dump(data_list, json_file, indent=4)
+            
     @staticmethod
     def name():
         return 'speech_commands'
@@ -56,7 +68,7 @@ class SpeechCommandsDataProvider(DataProvider):
     # TODO add silence
     @property
     def n_classes(self):
-        return 3
+        return 4
 
     @property
     def save_path(self):
@@ -95,17 +107,20 @@ def make_dataset(dir, class_to_idx, extensions):
                 if has_file_allowed_extension(path, extensions):
                     item = (path, class_to_idx[target])
                     images.append(item)
-
     targets = [i[1] for i in images]
     unknown_indices = [i for i in range(len(targets)) if class_to_idx['unknown'] == targets[i]]
     silence_indices = [i for i in range(len(targets)) if class_to_idx['silence'] == targets[i]]
 
     all_indices = set(range(len(targets)))
     n_keywords = len(all_indices - set(unknown_indices) - set(silence_indices))
-    n_unknowns = n_keywords // 10
-    n_silence = n_keywords // 10
-
+    #n_unknowns = n_keywords // 10
+    #n_silence = n_keywords // 10
+    n_unknowns = len(unknown_indices)
+    n_silence = len(silence_indices)
+    print('all_indices: {}, unknown_idx: {}, silence_idx: {}'.format(len(all_indices), len(unknown_indices), len(silence_indices)))
+    print('n_keywords: {}, n_unknowns: {}, n_silence: {}'.format(n_keywords, n_unknowns, n_silence))
     unused_indices = random.sample(unknown_indices, len(unknown_indices) - n_unknowns)
+    print('Unsued indices: {}'.format(unused_indices))
     for i in sorted(unused_indices, reverse=True):
         del images[i]
 
@@ -114,7 +129,6 @@ def make_dataset(dir, class_to_idx, extensions):
         images.append(images[silence_index])
 
     return images
-
 
 def load_bg_data(dir):
     background_data = []
@@ -169,10 +183,9 @@ class SpeechCommandsFolder(torch.utils.data.Dataset):
         self.root = root
         self.augment = augment
         self.extensions = ('.wav',)
-        self.sample_rate = 16000
+        self.sample_rate = 44100
         self.n_mfcc = n_mfcc
-        self.required_sample = self.sample_rate * 1 # 2.5
-        self.classes = ['silence', 'unknown','keyword']
+        self.classes = ['Adele', 'Hilfe Hilfe', 'unknown', 'silence']
         self.class_to_idx = {self.classes[i]: i for i in range(len(self.classes))}
 
         samples = make_dataset(self.root, self.class_to_idx, self.extensions)
@@ -184,7 +197,6 @@ class SpeechCommandsFolder(torch.utils.data.Dataset):
         targets = [s[1] for s in samples]
         self.targets = targets
         self.background_data = load_bg_data(root)
-        self.background_data = None
 
         self.unknown_indices = [i for i in range(len(targets)) if self.class_to_idx['unknown'] == targets[i]]
         self.silence_indices = [i for i in range(len(targets)) if self.class_to_idx['silence'] == targets[i]]
@@ -194,41 +206,44 @@ class SpeechCommandsFolder(torch.utils.data.Dataset):
 
         self.n_samples = len(all_indices)
 
-    def extract_features(self, sample):
-        if torchaudio_enabled:
-            melkwargs = {
-                'win_length': 640,
-                'hop_length': 320,
-                'n_fft': 640,
-            }
-            mfcc = torchaudio.transforms.MFCC(self.sample_rate, self.n_mfcc, melkwargs=melkwargs)(sample)
-            return mfcc
-        else:
-            mfcc = librosa.feature.mfcc(sample.numpy()[0], sr=self.sample_rate, n_mfcc=self.n_mfcc, hop_length=320, n_fft=640)
-            mfcc = torch.from_numpy(mfcc.astype('float32'))
-            return torch.reshape(mfcc, (1, mfcc.shape[0], mfcc.shape[1]))
+        self.path_list=[]
+        self.sample_list=[]
+
+    # def extract_features(self, sample):
+    #     if torchaudio_enabled:
+    #         melkwargs = {
+    #             'win_length': 640,
+    #             'hop_length': 320,
+    #             'n_fft': 640,
+    #         }
+    #         mfcc = torchaudio.transforms.MFCC(self.sample_rate, self.n_mfcc, melkwargs=melkwargs)(sample)
+    #         return mfcc
+    #     else:
+    #         mfcc = librosa.feature.mfcc(y=sample.numpy()[0], sr=self.sample_rate, n_mfcc=self.n_mfcc, hop_length=320, n_fft=640)
+    #         mfcc = torch.from_numpy(mfcc.astype('float32'))
+    #         return torch.reshape(mfcc, (1, mfcc.shape[0], mfcc.shape[1]))
 
     def loader(self, path):
         if torchaudio_enabled:
             waveform, sample_rate = torchaudio.load(path)
-            waveform = torchaudio.functional.resample(waveform, orig_freq=sample_rate, new_freq=self.sample_rate)
             n_samples = waveform.shape[1]
         else:
+            waveform, sample_rate = librosa.load(path)
             waveform, sample_rate = librosa.load(path, sr=self.sample_rate)
             n_samples = waveform.shape[0]
             waveform = torch.from_numpy(np.reshape(waveform, (1, n_samples)))
 
-        assert self.sample_rate == sample_rate
-
-        if n_samples == self.required_sample:
+        #assert self.sample_rate == sample_rate
+        sample_rate = sample_rate * 3
+        if n_samples == sample_rate:
             return waveform
-        elif n_samples < self.required_sample:
+        elif n_samples < sample_rate:
             padded_waveform = torch.zeros([1, sample_rate])
             padded_waveform[0, 0:n_samples] = waveform[0]
             return padded_waveform
-        elif n_samples > self.required_sample:
-            truncated_waveform = waveform[:, :self.required_sample]
-            return truncated_waveform 
+        elif n_samples > sample_rate:
+            trimmed_waveform = np.random.randint(n_samples - sample_rate)
+            return waveform[:, trimmed_waveform:trimmed_waveform + sample_rate]
 
     def transform(self, sample):
         time_shift_ms = 100
@@ -270,13 +285,14 @@ class SpeechCommandsFolder(torch.utils.data.Dataset):
         Returns:
             tuple: (sample, target) where target is class_index of the target class.
         """
-
         path, target = self.samples[index]
         sample = self.loader(path)
         if self.augment:
             sample = self.transform(sample)
-        sample = self.extract_features(sample)
-
+        #sample = self.extract_features(sample)
+        # Append the path and sample tensor data to the lists
+        #self.path_list.append(path)
+        #self.sample_list.append(sample.tolist())
         return sample, target
 
     def __len__(self):
