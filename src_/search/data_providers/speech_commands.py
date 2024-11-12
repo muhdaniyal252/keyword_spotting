@@ -184,6 +184,7 @@ class SpeechCommandsFolder(torch.utils.data.Dataset):
         self.augment = augment
         self.extensions = ('.wav',)
         self.sample_rate = 44100
+        self.required_sample = int(self.sample_rate * 2.5)
         self.n_mfcc = n_mfcc
         self.classes = ['silence', 'unknown','keyword']
         self.class_to_idx = {self.classes[i]: i for i in range(len(self.classes))}
@@ -226,24 +227,24 @@ class SpeechCommandsFolder(torch.utils.data.Dataset):
     def loader(self, path):
         if torchaudio_enabled:
             waveform, sample_rate = torchaudio.load(path)
+            waveform = torchaudio.functional.resample(waveform, orig_freq=sample_rate, new_freq=self.sample_rate)
             n_samples = waveform.shape[1]
         else:
-            waveform, sample_rate = librosa.load(path)
             waveform, sample_rate = librosa.load(path, sr=self.sample_rate)
             n_samples = waveform.shape[0]
             waveform = torch.from_numpy(np.reshape(waveform, (1, n_samples)))
 
-        #assert self.sample_rate == sample_rate
-        sample_rate = sample_rate * 3
-        if n_samples == sample_rate:
+        assert self.sample_rate == sample_rate
+
+        if n_samples == self.required_sample:
             return waveform
-        elif n_samples < sample_rate:
+        elif n_samples < self.required_sample:
             padded_waveform = torch.zeros([1, sample_rate])
             padded_waveform[0, 0:n_samples] = waveform[0]
             return padded_waveform
-        elif n_samples > sample_rate:
-            trimmed_waveform = np.random.randint(n_samples - sample_rate)
-            return waveform[:, trimmed_waveform:trimmed_waveform + sample_rate]
+        elif n_samples > self.required_sample:
+            truncated_waveform = waveform[:, :self.required_sample]
+            return truncated_waveform
 
     def transform(self, sample):
         time_shift_ms = 100

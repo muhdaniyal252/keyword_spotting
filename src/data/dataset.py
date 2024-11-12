@@ -2,12 +2,12 @@ import os
 import shutil
 import random
 
-noise_path = '/shareddrive/working/data_code/data/neg_data/_background_noise_/chunks/1s_chunks/*'
-environment_path = '/shareddrive/working/data_code/data/neg_data/envornment/chunks/1s_chunks/*'
-word_path = '/shareddrive/working/data_code/data/neg_data/spcmd/all_words/original/*'
-# word_path = '/shareddrive/working/data_code/data/neg_data/spcmd/all_words/2-5s_chunks/*'
-recording_path = '/shareddrive/working/data_code/data/neg_data/internet_recordings/chunks/1s_chunks/*'
-aug_recording_path = '/shareddrive/working/data_code/data/neg_data/internet_recordings/chunks/1s_chunks_aug/*'
+noise_path = '/shareddrive/working/data_code/data/neg_data/_background_noise_/chunks/2-5s_chunks/*'
+environment_path = '/shareddrive/working/data_code/data/neg_data/envornment/chunks/2-5s_chunks/*'
+# word_path = '/shareddrive/working/data_code/data/neg_data/spcmd/all_words/original/*'
+word_path = '/shareddrive/working/data_code/data/neg_data/spcmd/all_words/2-5s_chunks/*'
+recording_path = '/shareddrive/working/data_code/data/neg_data/internet_recordings/chunks/2-5s_chunks/*'
+aug_recording_path = '/shareddrive/working/data_code/data/neg_data/internet_recordings/chunks/2-5s_chunks_aug/*'
 
 keyword_files = list() 
 
