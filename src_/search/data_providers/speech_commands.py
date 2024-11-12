@@ -239,7 +239,7 @@ class SpeechCommandsFolder(torch.utils.data.Dataset):
         if n_samples == self.required_sample:
             return waveform
         elif n_samples < self.required_sample:
-            padded_waveform = torch.zeros([1, sample_rate])
+            padded_waveform = torch.zeros([1, self.required_sample])
             padded_waveform[0, 0:n_samples] = waveform[0]
             return padded_waveform
         elif n_samples > self.required_sample:
